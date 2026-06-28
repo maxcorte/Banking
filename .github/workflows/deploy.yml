@@ -1,0 +1,33 @@
+name: Deploy
+
+# Ce workflow se lance APRÈS le workflow "CI", et UNIQUEMENT si celui-ci a
+# réussi sur la branche main. Résultat : on ne déploie jamais du code dont les
+# tests sont cassés.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  # Permet aussi de lancer le déploiement à la main depuis l'onglet Actions
+  # (bouton "Run workflow"), pratique pour tester la connexion SSH.
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Déployer sur le VPS
+    runs-on: ubuntu-latest
+    # On déploie si : déclenchement manuel, OU le workflow CI a réussi.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Connexion SSH et mise à jour de la prod
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /root/banking
+            git pull --ff-only
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker image prune -f
