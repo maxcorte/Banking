@@ -1,27 +1,34 @@
 package com.example.banking;
 
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Base des tests d'intégration : démarre un PostgreSQL réel et jetable dans un
- * conteneur Docker, identique à la production. Flyway applique les migrations
- * (dont la création du compte "monde extérieur") au démarrage du contexte.
+ * Base des tests d'intégration : un PostgreSQL réel et jetable (identique à la
+ * prod), démarré UNE SEULE FOIS pour toute la suite de tests (pattern singleton).
  *
- * @ServiceConnection branche automatiquement la datasource Spring sur ce
- * conteneur : aucune URL ni mot de passe à configurer.
+ * On ne ferme jamais le conteneur : Ryuk (Testcontainers) le nettoie à la sortie
+ * de la JVM. Cela évite que chaque classe redémarre la base sur un nouveau port
+ * et casse le contexte Spring mis en cache.
  *
- * Pré-requis pour lancer ces tests : Docker doit être démarré sur la machine.
+ * Pré-requis : un démon Docker disponible (le cas sur les runners GitHub Actions).
  */
 @SpringBootTest
-@Testcontainers
 abstract class AbstractPostgresIntegrationTest {
 
-    @Container
-    @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:17");
+
+    static {
+        POSTGRES.start();
+    }
+
+    @DynamicPropertySource
+    static void datasourceProps(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
+    }
 }

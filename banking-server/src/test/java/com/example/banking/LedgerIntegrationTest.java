@@ -1,12 +1,15 @@
 package com.example.banking;
 
 import com.example.banking.domain.Account;
+import com.example.banking.domain.Role;
+import com.example.banking.domain.User;
 import com.example.banking.domain.BankTransaction;
 import com.example.banking.domain.Posting;
 import com.example.banking.domain.TransactionCategory;
 import com.example.banking.exception.InsufficientFundsException;
 import com.example.banking.exception.InvalidTransferException;
 import com.example.banking.repository.AccountRepository;
+import com.example.banking.repository.UserRepository;
 import com.example.banking.service.AccountService;
 import com.example.banking.service.DepositService;
 import com.example.banking.service.TransferService;
@@ -28,10 +31,15 @@ class LedgerIntegrationTest extends AbstractPostgresIntegrationTest {
     @Autowired TransferService transferService;
     @Autowired DepositService depositService;
     @Autowired AccountService accountService;
+    @Autowired UserRepository users;
     @Autowired AccountRepository accountRepository;
 
+    /** Crée un utilisateur réel puis un de ses comptes (la table accounts
+     *  a une clé étrangère vers users : l'owner doit exister). */
     private Account newCustomer() {
-        return accountService.create("Test " + UUID.randomUUID(), "EUR", UUID.randomUUID());
+        UUID ownerId = UUID.randomUUID();
+        users.save(new User(ownerId, "user-" + ownerId, "x", Role.USER));
+        return accountService.create("Test " + ownerId, "EUR", ownerId);
     }
 
     @Test
