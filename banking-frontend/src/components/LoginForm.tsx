@@ -29,7 +29,7 @@ export function LoginForm() {
   return (
     <div className="auth-screen">
       <form className="card auth-card" onSubmit={handleSubmit}>
-        <h1 className="brand">Ma Banque</h1>
+        <h1 className="brand">Ma Banque coucou</h1>
         <p className="subtitle">
           {mode === 'login' ? 'Connectez-vous à votre espace' : 'Créez votre compte'}
         </p>
