@@ -2,6 +2,9 @@
 .env
 *.env
 !.env.example
+DEPLOIEMENT-AUTO.md
+DEPLOIEMENT-VPS.md
+DEPLOIEMENT.md
 
 # --- Builds ---
 **/target/
