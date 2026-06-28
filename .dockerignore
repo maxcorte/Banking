@@ -1,0 +1,9 @@
+**/node_modules
+**/target
+**/dist
+**/.git
+**/.idea
+**/.vscode
+**/*.log
+# Les statiques locaux sont reconstruits dans l'image.
+banking-server/src/main/resources/static/**

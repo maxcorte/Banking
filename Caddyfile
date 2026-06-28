@@ -1,0 +1,6 @@
+# Caddy obtient et renouvelle tout seul le certificat HTTPS (Let's Encrypt)
+# pour le domaine défini dans .env, et redirige le trafic vers l'app.
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy app:8080
+}

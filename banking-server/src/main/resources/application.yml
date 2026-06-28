@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: banking-server
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:banking}
+    username: ${DB_USER:banking}
+    password: ${DB_PASSWORD:banking}
+
+  jpa:
+    hibernate:
+      # Le schéma est géré par Flyway, pas par Hibernate.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+
+# Securite JWT. En production, fournir le secret via la variable
+# d'environnement JWT_SECRET (au moins 32 caracteres).
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-change-me-please-32chars-minimum-0123456789}
+    # Jeton d'acces court (15 min) + refresh token long (7 jours).
+    access-expiration-ms: ${JWT_ACCESS_MS:900000}
+    refresh-expiration-ms: ${JWT_REFRESH_MS:604800000}
+  admin:
+    # Compte administrateur cree au demarrage (voit tous les comptes).
+    # A changer en production via ADMIN_USERNAME / ADMIN_PASSWORD.
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD:admin1234}
+  security:
+    # Mettre a true en deploiement : le demarrage echoue si les secrets
+    # (JWT / mot de passe admin) sont restes aux valeurs par defaut.
+    enforce-secrets: ${ENFORCE_SECRETS:false}
+  auth:
+    # Cookies d'authentification Secure (HTTPS uniquement). En HTTP local
+    # pur, mettre COOKIE_SECURE=false. Via Funnel (HTTPS) : laisser true.
+    cookie-secure: ${COOKIE_SECURE:true}
+
+spring.mvc.problemdetails.enabled: true
+
+# Endpoints de supervision (santé de l'appli)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,51 @@
+name: CI
+
+# Se déclenche à chaque push et à chaque pull request sur main.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-tests:
+    name: Tests du grand livre (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # Docker est préinstallé sur les runners ubuntu-latest : Testcontainers
+      # démarre donc un vrai PostgreSQL sans configuration supplémentaire.
+      - name: Lancer les tests
+        working-directory: banking-server
+        run: mvn -B test
+
+  frontend-build:
+    name: Build du frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: banking-frontend/package-lock.json
+
+      - name: Installer les dépendances
+        working-directory: banking-frontend
+        run: npm ci
+
+      - name: Compiler (vérifie aussi le typage TypeScript)
+        working-directory: banking-frontend
+        run: npm run build

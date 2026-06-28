@@ -1,0 +1,63 @@
+# Production sur VPS : Caddy (HTTPS automatique) -> app Spring -> Postgres.
+# 1) cp .env.example .env  puis remplis les valeurs (dont DOMAIN)
+# 2) docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: postgres:17
+    container_name: banking-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-banking}
+      POSTGRES_USER: ${DB_USER:-banking}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD requis dans .env}
+    volumes:
+      - banking_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-banking}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    # Aucune section "ports": la base reste interne au réseau Docker.
+
+  app:
+    build: .
+    container_name: banking-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-banking}
+      DB_USER: ${DB_USER:-banking}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD requis dans .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis dans .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD requis dans .env}
+      ENFORCE_SECRETS: "true"
+      # Caddy fournit le HTTPS : les cookies Secure sont donc corrects.
+      COOKIE_SECURE: "true"
+    expose:
+      - "8080"          # accessible seulement par Caddy, jamais publiquement.
+
+  caddy:
+    image: caddy:2
+    container_name: banking-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN requis dans .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data        # certificats Let's Encrypt (à conserver !)
+      - caddy_config:/config
+
+volumes:
+  banking_pgdata:
+  caddy_data:
+  caddy_config:

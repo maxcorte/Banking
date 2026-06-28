@@ -1,0 +1,21 @@
+# --- Secrets : NE JAMAIS committer ---
+.env
+*.env
+!.env.example
+
+# --- Builds ---
+**/target/
+**/dist/
+**/node_modules/
+
+# --- Sauvegardes base de données ---
+backups/
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.iml
+*.log
+*.dump
+.DS_Store
+Thumbs.db
