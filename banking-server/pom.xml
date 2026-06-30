@@ -55,11 +55,23 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         <!-- Notifications push web (chiffrement aes128gcm + VAPID).
-             Tire transitivement BouncyCastle et Apache HttpClient. -->
+             Tire transitivement Apache HttpClient. -->
         <dependency>
             <groupId>nl.martijndwars</groupId>
             <artifactId>web-push</artifactId>
             <version>5.1.1</version>
+        </dependency>
+        <!-- BouncyCastle : web-push le declare optionnel, on le fournit donc
+             explicitement. Version figee sur celle geree par Spring Boot 4.1. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.84</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>1.84</version>
         </dependency>
         <!-- Migrations de schema versionnees.
              En Spring Boot 4, l'auto-configuration Flyway est dans un module
