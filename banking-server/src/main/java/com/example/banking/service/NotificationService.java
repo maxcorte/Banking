@@ -5,16 +5,17 @@ import com.example.banking.domain.Notification;
 import com.example.banking.repository.AccountRepository;
 import com.example.banking.repository.NotificationRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Cree et expose les notifications in-app. La creation se fait en reaction a un
- * MoneyMovedEvent, APRES le commit du virement (voir NotificationEventListener) :
- * une eventuelle erreur de notification n'affecte donc jamais le grand livre.
+ * MoneyMovedEvent, APRES le commit du virement (voir NotificationEventListener),
+ * de maniere asynchrone : une eventuelle erreur n'affecte donc jamais le grand
+ * livre. La methode renvoie aussi la liste des messages a pousser (push web).
  */
 @Service
 public class NotificationService {
@@ -27,12 +28,14 @@ public class NotificationService {
         this.accounts = accounts;
     }
 
-    /** Genere les notifications pour les proprietaires des comptes concernes. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void createForMoneyMoved(MoneyMovedEvent e) {
+    /** Genere les notifications in-app et renvoie les messages a pousser. */
+    @Transactional
+    public List<PushMessage> createForMoneyMoved(MoneyMovedEvent e) {
+        List<PushMessage> messages = new ArrayList<>();
+
         Account to = accounts.findById(e.toAccountId()).orElse(null);
         if (to == null) {
-            return;
+            return messages;
         }
         Account from = accounts.findById(e.fromAccountId()).orElse(null);
         boolean isDeposit = DepositService.EXTERNAL_ACCOUNT_ID.equals(e.fromAccountId());
@@ -41,24 +44,27 @@ public class NotificationService {
         // Beneficiaire (compte credite)
         if (to.getOwnerId() != null) {
             if (isDeposit) {
-                save(to.getOwnerId(), "DEPOSIT", "Dépôt reçu",
-                        "Vous avez reçu " + amount + " (dépôt).");
+                messages.add(save(to.getOwnerId(), "DEPOSIT", "Dépôt reçu",
+                        "Vous avez reçu " + amount + " (dépôt)."));
             } else {
                 String fromName = from != null ? from.getOwnerName() : "un tiers";
-                save(to.getOwnerId(), "TRANSFER_IN", "Paiement reçu",
-                        "Vous avez reçu " + amount + " de " + fromName + ".");
+                messages.add(save(to.getOwnerId(), "TRANSFER_IN", "Paiement reçu",
+                        "Vous avez reçu " + amount + " de " + fromName + "."));
             }
         }
 
         // Emetteur (compte debite), sauf pour un depot (compte exterieur)
         if (!isDeposit && from != null && from.getOwnerId() != null) {
-            save(from.getOwnerId(), "TRANSFER_OUT", "Virement envoyé",
-                    "Vous avez envoyé " + amount + " à " + to.getOwnerName() + ".");
+            messages.add(save(from.getOwnerId(), "TRANSFER_OUT", "Virement envoyé",
+                    "Vous avez envoyé " + amount + " à " + to.getOwnerName() + "."));
         }
+
+        return messages;
     }
 
-    private void save(UUID userId, String type, String title, String body) {
+    private PushMessage save(UUID userId, String type, String title, String body) {
         notifications.save(new Notification(UUID.randomUUID(), userId, type, title, body));
+        return new PushMessage(userId, title, body);
     }
 
     @Transactional(readOnly = true)
@@ -77,7 +83,9 @@ public class NotificationService {
     }
 
     private static String formatMinor(long minor) {
-        // Format simple "12,34 €" (virgule decimale a la francaise).
         return String.format("%.2f €", minor / 100.0).replace('.', ',');
     }
+
+    /** Message destine au push web (un par utilisateur notifie). */
+    public record PushMessage(UUID userId, String title, String body) {}
 }

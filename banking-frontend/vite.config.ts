@@ -10,7 +10,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Service worker sur mesure (src/sw.ts) : il garde le precache Workbox
+      // ET ajoute la gestion des notifications push.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: ['favicon-32x32.png', 'apple-touch-icon.png'],
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+      },
       manifest: {
         name: 'Ma Banque',
         short_name: 'Ma Banque',
@@ -32,17 +40,10 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        // Le service worker ne doit jamais intercepter l'API ni l'actuator :
-        // ces requetes doivent toujours partir au reseau.
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api/, /^\/actuator/],
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
-      },
     }),
   ],
   server: {
-    host: true, // ecoute sur toutes les interfaces : accessible depuis le reseau local
+    host: true,
     port: 5173,
     proxy: {
       '/api': 'http://localhost:8080',

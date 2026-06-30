@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import type { NotificationItem } from '../types';
+import { disablePush, enablePush, getPushState, type PushState } from '../push';
 
 /**
- * Cloche de notifications : badge avec le nombre de non-lues, panneau déroulant
- * listant les dernières notifications. Le compteur est rafraîchi par sondage
- * (toutes les 25 s) et au retour sur l'onglet. Ouvrir le panneau marque les
- * notifications comme lues.
+ * Cloche de notifications : badge des non-lues + panneau des dernières. Permet
+ * aussi d'activer les notifications push (pop-up système, même app fermée).
  */
 export function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
+  const [pushState, setPushState] = useState<PushState>('disabled');
+  const [pushBusy, setPushBusy] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
   async function refreshCount() {
@@ -23,9 +24,9 @@ export function NotificationsBell() {
     }
   }
 
-  // Sondage périodique + au retour sur l'onglet.
   useEffect(() => {
     refreshCount();
+    getPushState().then(setPushState);
     const id = window.setInterval(refreshCount, 25000);
     const onFocus = () => refreshCount();
     window.addEventListener('focus', onFocus);
@@ -35,7 +36,6 @@ export function NotificationsBell() {
     };
   }, []);
 
-  // Fermer le panneau au clic à l'extérieur.
   useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (open && ref.current && !ref.current.contains(e.target as Node)) {
@@ -53,11 +53,49 @@ export function NotificationsBell() {
       try {
         setItems(await api.listNotifications());
         await api.markNotificationsRead();
-        setUnread(0); // optimiste : tout est lu dès l'ouverture
+        setUnread(0);
       } catch {
         /* ignore */
       }
     }
+  }
+
+  async function onTogglePush() {
+    setPushBusy(true);
+    try {
+      setPushState(pushState === 'enabled' ? await disablePush() : await enablePush());
+    } catch {
+      /* ignore */
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  function pushFooter() {
+    if (pushState === 'unsupported') {
+      return (
+        <p className="notif-push-hint">
+          Installe l'app sur l'écran d'accueil pour recevoir les alertes push.
+        </p>
+      );
+    }
+    if (pushState === 'denied') {
+      return (
+        <p className="notif-push-hint">
+          Notifications bloquées par le navigateur (à réautoriser dans ses réglages).
+        </p>
+      );
+    }
+    return (
+      <button
+        type="button"
+        className={`notif-push-btn ${pushState === 'enabled' ? 'on' : ''}`}
+        onClick={onTogglePush}
+        disabled={pushBusy}
+      >
+        {pushState === 'enabled' ? 'Alertes push activées ✓' : '🔔 Activer les alertes push'}
+      </button>
+    );
   }
 
   return (
@@ -89,6 +127,7 @@ export function NotificationsBell() {
               ))}
             </ul>
           )}
+          <div className="notif-foot">{pushFooter()}</div>
         </div>
       )}
     </div>

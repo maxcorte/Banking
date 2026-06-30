@@ -47,9 +47,14 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_SSL: ${MAIL_SSL:-true}
       MAIL_STARTTLS: ${MAIL_STARTTLS:-false}
-      MAIL_FROM: ${MAIL_FROM:-no-reply@maximedelcorte.cloud}
+      MAIL_FROM: ${MAIL_FROM:-noreply@maximedelcorte.cloud}
       # URL publique, pour construire le lien envoye par e-mail.
       APP_BASE_URL: ${APP_BASE_URL:-https://maximedelcorte.cloud}
+      # --- Notifications push web (VAPID) ---
+      # Vides par defaut : sans elles, le push est simplement desactive.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:noreply@maximedelcorte.cloud}
     expose:
       - "8080"          # accessible seulement par Caddy, jamais publiquement.
 

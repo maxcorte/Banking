@@ -1019,3 +1019,32 @@ button.danger:hover:not(:disabled) {
     right: auto;
   }
 }
+
+/* Pied du panneau de notifications : activation du push */
+.notif-foot {
+  padding: 0.6rem 0.95rem 0.7rem;
+  border-top: 1px solid var(--border);
+}
+.notif-push-btn {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.notif-push-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.notif-push-btn.on {
+  background: transparent;
+  color: var(--accent);
+}
+.notif-push-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}

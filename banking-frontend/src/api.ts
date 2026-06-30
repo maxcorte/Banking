@@ -104,6 +104,13 @@ export const api = {
   unreadNotifications: () => request<{ count: number }>('/notifications/unread-count'),
   markNotificationsRead: () => request<void>('/notifications/read', { method: 'POST' }),
 
+  pushPublicKey: () =>
+    request<{ publicKey: string | null; enabled: boolean }>('/push/public-key'),
+  subscribePush: (sub: PushSubscriptionJSON) =>
+    request<void>('/push/subscribe', { method: 'POST', body: JSON.stringify(sub) }),
+  unsubscribePush: (endpoint: string) =>
+    request<void>('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+
   // Restaure la session au chargement SANS declencher l'evenement global
   // 'auth:expired' : on sonde /me, et si l'acces est expire on tente un seul
   // refresh via le cookie, puis on reessaie. Evite toute collision avec une

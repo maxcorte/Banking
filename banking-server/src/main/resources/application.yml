@@ -73,6 +73,12 @@ app:
   reset:
     # Duree de validite d'un lien de reinitialisation (defaut : 30 min).
     expiration-ms: ${RESET_EXPIRATION_MS:1800000}
+  vapid:
+    # Cles VAPID pour les notifications push web. Vides par defaut : sans elles,
+    # le push est simplement desactive et l'app fonctionne normalement.
+    public-key: ${VAPID_PUBLIC_KEY:}
+    private-key: ${VAPID_PRIVATE_KEY:}
+    subject: ${VAPID_SUBJECT:mailto:noreply@maximedelcorte.cloud}
 
 spring.mvc.problemdetails.enabled: true
 

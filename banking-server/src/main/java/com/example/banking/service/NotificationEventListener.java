@@ -5,28 +5,38 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.List;
+
 /**
- * Declenche la creation des notifications APRES le commit du virement, et de
- * maniere ASYNCHRONE (executeur dedie). C'est essentiel : un listener AFTER_COMMIT
- * synchrone s'execute AVANT la liberation de la connexion du virement ; ouvrir une
- * 2e connexion (notification) a ce moment-la doublerait la demande de connexions
- * et pourrait epuiser le pool sous forte concurrence. En asynchrone, la connexion
- * du virement est deja relachee quand la notification est ecrite.
+ * Apres le commit d'un virement, et de maniere ASYNCHRONE :
+ *  1. cree les notifications in-app ;
+ *  2. envoie les notifications push web aux navigateurs abonnes.
+ *
+ * Asynchrone car (a) un listener AFTER_COMMIT synchrone tient encore la connexion
+ * du virement et (b) l'envoi push fait des appels reseau : il ne doit jamais
+ * ralentir ni bloquer le chemin transactionnel du grand livre.
  */
 @Component
 public class NotificationEventListener {
 
     private final NotificationService notificationService;
+    private final WebPushService webPushService;
 
-    public NotificationEventListener(NotificationService notificationService) {
+    public NotificationEventListener(NotificationService notificationService,
+                                     WebPushService webPushService) {
         this.notificationService = notificationService;
+        this.webPushService = webPushService;
     }
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMoneyMoved(MoneyMovedEvent event) {
         try {
-            notificationService.createForMoneyMoved(event);
+            List<NotificationService.PushMessage> messages =
+                    notificationService.createForMoneyMoved(event);
+            for (NotificationService.PushMessage m : messages) {
+                webPushService.sendToUser(m.userId(), m.title(), m.body());
+            }
         } catch (Exception ignored) {
             // Best-effort : une notification ratee ne doit rien casser.
         }
