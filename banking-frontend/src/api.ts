@@ -1,4 +1,4 @@
-import type { Account, AuditEntry, Beneficiary, NotificationItem, PaymentRequest, Transaction, TransactionLine, UserInfo } from './types';
+import type { Account, AuditPage, Beneficiary, NotificationItem, PaymentRequest, Transaction, TransactionLine, UserInfo } from './types';
 
 const BASE = '/api';
 
@@ -200,7 +200,13 @@ export const api = {
   deleteBeneficiary: (id: string) =>
     request<void>(`/beneficiaries/${id}`, { method: 'DELETE' }),
 
-  listAudit: (limit = 100) => request<AuditEntry[]>(`/audit?limit=${limit}`),
+  listAudit: (params: { q?: string; page?: number; size?: number } = {}) => {
+    const sp = new URLSearchParams();
+    if (params.q) sp.set('q', params.q);
+    sp.set('page', String(params.page ?? 0));
+    sp.set('size', String(params.size ?? 25));
+    return request<AuditPage>(`/audit?${sp.toString()}`);
+  },
 };
 
 export function formatEuros(minor: number): string {

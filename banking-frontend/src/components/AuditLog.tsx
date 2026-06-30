@@ -25,8 +25,15 @@ function actionClass(action: string): string {
   return 'audit-tag';
 }
 
+const PAGE_SIZE = 25;
+
 export function AuditLog({ onClose }: { onClose: () => void }) {
-  const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [items, setItems] = useState<AuditEntry[]>([]);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [query, setQuery] = useState('');
+  const [activeQuery, setActiveQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +41,10 @@ export function AuditLog({ onClose }: { onClose: () => void }) {
     setLoading(true);
     setError(null);
     try {
-      setEntries(await api.listAudit(200));
+      const res = await api.listAudit({ q: activeQuery, page, size: PAGE_SIZE });
+      setItems(res.items);
+      setTotal(res.total);
+      setHasMore(res.hasMore);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur');
     } finally {
@@ -44,49 +54,94 @@ export function AuditLog({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, activeQuery]);
+
+  function runSearch() {
+    setPage(0);
+    setActiveQuery(query.trim());
+  }
+
+  const from = total === 0 ? 0 : page * PAGE_SIZE + 1;
+  const to = page * PAGE_SIZE + items.length;
 
   return (
     <section className="audit">
       <div className="section-head">
         <h2>Journal d'audit</h2>
-        <div className="row">
-          <button className="ghost" onClick={load}>
-            Rafraîchir
+        <button className="ghost" onClick={onClose}>
+          Retour
+        </button>
+      </div>
+
+      <div className="audit-toolbar">
+        <input
+          className="audit-search"
+          placeholder="Rechercher (acteur, action, détail)…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+        />
+        <button className="primary" onClick={runSearch}>
+          Rechercher
+        </button>
+        {activeQuery && (
+          <button
+            className="ghost"
+            onClick={() => {
+              setQuery('');
+              setPage(0);
+              setActiveQuery('');
+            }}
+          >
+            Effacer
           </button>
-          <button className="ghost" onClick={onClose}>
-            Retour
-          </button>
-        </div>
+        )}
       </div>
 
       {loading && <p className="muted">Chargement…</p>}
       {error && <p className="error">{error}</p>}
-      {!loading && entries.length === 0 && <p className="muted">Aucune entrée.</p>}
+      {!loading && items.length === 0 && <p className="muted">Aucune entrée.</p>}
 
-      {entries.length > 0 && (
-        <table className="audit-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Acteur</th>
-              <th>Action</th>
-              <th>Détail</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) => (
-              <tr key={e.id}>
-                <td className="nowrap">{new Date(e.at).toLocaleString('fr-FR')}</td>
-                <td>{e.actor ?? '—'}</td>
-                <td>
+      {items.length > 0 && (
+        <>
+          <div className="audit-rows">
+            <div className="audit-row audit-row-head">
+              <span>Date</span>
+              <span>Acteur</span>
+              <span>Action</span>
+              <span>Détail</span>
+            </div>
+            {items.map((e) => (
+              <div key={e.id} className="audit-row">
+                <span className="audit-date" data-label="Date">
+                  {new Date(e.at).toLocaleString('fr-FR')}
+                </span>
+                <span className="audit-actor" data-label="Acteur">
+                  {e.actor}
+                </span>
+                <span data-label="Action">
                   <span className={actionClass(e.action)}>{actionLabel(e.action)}</span>
-                </td>
-                <td>{e.detail ?? ''}</td>
-              </tr>
+                </span>
+                <span className="audit-detail" data-label="Détail">
+                  {e.detail}
+                </span>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+
+          <div className="audit-pager">
+            <button className="ghost" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+              ← Précédent
+            </button>
+            <span className="muted">
+              {from}–{to} sur {total}
+            </span>
+            <button className="ghost" disabled={!hasMore} onClick={() => setPage((p) => p + 1)}>
+              Suivant →
+            </button>
+          </div>
+        </>
       )}
     </section>
   );

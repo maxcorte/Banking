@@ -76,3 +76,11 @@ export interface PaymentRequest {
   createdAt: string;
   resolvedAt: string | null;
 }
+
+export interface AuditPage {
+  items: AuditEntry[];
+  page: number;
+  size: number;
+  total: number;
+  hasMore: boolean;
+}

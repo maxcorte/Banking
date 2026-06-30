@@ -2,6 +2,7 @@ package com.example.banking.service;
 
 import com.example.banking.domain.AuditEntry;
 import com.example.banking.repository.AuditEntryRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -45,6 +46,15 @@ public class AuditService {
     public List<AuditEntry> recent(int limit) {
         int capped = Math.max(1, Math.min(limit, 500));
         return repository.findAllByOrderByAtDesc(PageRequest.of(0, capped));
+    }
+
+    /** Page du journal avec recherche optionnelle (acteur / action / detail). */
+    @Transactional(readOnly = true)
+    public Page<AuditEntry> page(String q, int page, int size) {
+        int p = Math.max(0, page);
+        int s = Math.min(Math.max(1, size), 100);
+        String query = (q == null || q.isBlank()) ? null : q.trim();
+        return repository.search(query, PageRequest.of(p, s));
     }
 
     private void save(String actor, String action, String detail) {

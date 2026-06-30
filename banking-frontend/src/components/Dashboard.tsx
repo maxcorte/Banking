@@ -10,7 +10,7 @@ import { AuditLog } from './AuditLog';
 import { BalanceChart } from './BalanceChart';
 import { ThemeToggle } from './ThemeToggle';
 import { SpendingStats } from './SpendingStats';
-import { downloadStatementCsv, printStatement } from '../statement';
+import { downloadStatementCsv, downloadStatementPdf } from '../statement';
 import { categoryLabel, categoryColor } from '../categories';
 import { ReceiveQR } from './ReceiveQR';
 import { QrScanner, type ScannedPay } from './QrScanner';
@@ -129,6 +129,15 @@ export function Dashboard() {
     }
   }
 
+  function openSection(which: 'home' | 'receive' | 'requests' | 'stats' | 'audit') {
+    setShowReceive(which === 'receive');
+    setShowRequests(which === 'requests');
+    setShowStats(which === 'stats');
+    setShowAudit(which === 'audit');
+  }
+
+  const anyPanel = showReceive || showRequests || showStats || showAudit;
+
   return (
     <div className="app">
       <header className="topbar">
@@ -136,55 +145,6 @@ export function Dashboard() {
         <div className="row">
           <NotificationsBell />
           <ThemeToggle />
-          <button
-            className="link"
-            onClick={() => {
-              setShowReceive((v) => !v);
-              setShowStats(false);
-              setShowAudit(false);
-              setShowRequests(false);
-            }}
-          >
-            {showReceive ? 'Mes comptes' : 'Recevoir'}
-          </button>
-          <button className="link" onClick={() => setShowScanner(true)}>
-            Scanner
-          </button>
-          <button
-            className="link"
-            onClick={() => {
-              setShowRequests((v) => !v);
-              setShowStats(false);
-              setShowAudit(false);
-              setShowReceive(false);
-            }}
-          >
-            {showRequests ? 'Mes comptes' : 'Demandes'}
-          </button>
-          <button
-            className="link"
-            onClick={() => {
-              setShowStats((v) => !v);
-              setShowAudit(false);
-              setShowReceive(false);
-              setShowRequests(false);
-            }}
-          >
-            {showStats ? 'Mes comptes' : 'Statistiques'}
-          </button>
-          {isAdmin && (
-            <button
-              className="link"
-              onClick={() => {
-                setShowAudit((v) => !v);
-                setShowStats(false);
-                setShowReceive(false);
-                setShowRequests(false);
-              }}
-            >
-              {showAudit ? 'Mes comptes' : "Journal d'audit"}
-            </button>
-          )}
           <button className="link" onClick={logout}>
             Déconnexion
           </button>
@@ -302,7 +262,7 @@ export function Dashboard() {
                     <button className="ghost" onClick={() => downloadStatementCsv(selected, history)}>
                       Exporter CSV
                     </button>
-                    <button className="ghost" onClick={() => printStatement(selected, history)}>
+                    <button className="ghost" onClick={() => void downloadStatementPdf(selected, history)}>
                       Relevé PDF
                     </button>
                   </div>
@@ -383,6 +343,35 @@ export function Dashboard() {
       {showScanner && (
         <QrScanner onDetected={handleScan} onClose={() => setShowScanner(false)} />
       )}
+
+      <nav className="footbar">
+        <button className={!anyPanel ? 'active' : ''} onClick={() => openSection('home')}>
+          <span className="fb-ico">🏦</span>
+          <span className="fb-lbl">Comptes</span>
+        </button>
+        <button className={showReceive ? 'active' : ''} onClick={() => openSection('receive')}>
+          <span className="fb-ico">⬇️</span>
+          <span className="fb-lbl">Recevoir</span>
+        </button>
+        <button onClick={() => setShowScanner(true)}>
+          <span className="fb-ico">📷</span>
+          <span className="fb-lbl">Scanner</span>
+        </button>
+        <button className={showRequests ? 'active' : ''} onClick={() => openSection('requests')}>
+          <span className="fb-ico">💬</span>
+          <span className="fb-lbl">Demandes</span>
+        </button>
+        <button className={showStats ? 'active' : ''} onClick={() => openSection('stats')}>
+          <span className="fb-ico">📊</span>
+          <span className="fb-lbl">Stats</span>
+        </button>
+        {isAdmin && (
+          <button className={showAudit ? 'active' : ''} onClick={() => openSection('audit')}>
+            <span className="fb-ico">📜</span>
+            <span className="fb-lbl">Audit</span>
+          </button>
+        )}
+      </nav>
     </div>
   );
 }

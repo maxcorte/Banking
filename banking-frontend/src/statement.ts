@@ -56,6 +56,55 @@ export function downloadStatementCsv(account: Account, lines: TransactionLine[])
   triggerDownload(blob, `releve-${account.accountNumber}.csv`);
 }
 
+/**
+ * Génère un vrai fichier PDF téléchargeable (relevé de compte).
+ * Sur mobile, le navigateur propose alors de l'enregistrer/partager —
+ * plus d'onglet imprimable bloqué sans retour possible.
+ */
+export async function downloadStatementPdf(account: Account, lines: TransactionLine[]) {
+  // Imports dynamiques : la lib n'est chargée que si l'utilisateur exporte.
+  const { jsPDF } = await import('jspdf');
+  const autoTable = (await import('jspdf-autotable')).default;
+
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const marginX = 40;
+
+  doc.setFontSize(16);
+  doc.text('Relevé de compte', marginX, 48);
+  doc.setFontSize(10);
+  doc.setTextColor(107, 116, 136);
+  doc.text(`${account.ownerName} · ${account.accountNumber}`, marginX, 66);
+  doc.text(`Solde actuel : ${eurosLabel(account.balanceMinor)}`, marginX, 80);
+  doc.text(`Édité le ${new Date().toLocaleString('fr-FR')}`, marginX, 94);
+
+  const body = lines.map((l) => {
+    const incoming = l.amountMinor >= 0;
+    const cat = categoryLabel(l.category);
+    const op = l.counterpartyName ? `${typeLabel(l)} — ${l.counterpartyName}` : typeLabel(l);
+    return [
+      new Date(l.at).toLocaleString('fr-FR'),
+      cat ? `${op} (${cat})` : op,
+      `${incoming ? '+' : '−'}${eurosLabel(Math.abs(l.amountMinor))}`,
+      eurosLabel(l.balanceAfterMinor),
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 112,
+    head: [['Date', 'Opération', 'Montant', 'Solde']],
+    body,
+    styles: { fontSize: 8, cellPadding: 4 },
+    headStyles: { fillColor: [31, 111, 235], textColor: 255 },
+    columnStyles: {
+      2: { halign: 'right' },
+      3: { halign: 'right' },
+    },
+    margin: { left: marginX, right: marginX },
+  });
+
+  doc.save(`releve-${account.accountNumber}.pdf`);
+}
+
 /** Ouvre un relevé imprimable : l'utilisateur peut « Imprimer → Enregistrer en PDF ». */
 export function printStatement(account: Account, lines: TransactionLine[]) {
   const rowsHtml = lines
