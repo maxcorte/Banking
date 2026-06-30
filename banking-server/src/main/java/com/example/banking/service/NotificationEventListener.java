@@ -8,13 +8,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import java.util.List;
 
 /**
- * Apres le commit d'un virement, et de maniere ASYNCHRONE :
- *  1. cree les notifications in-app ;
- *  2. envoie les notifications push web aux navigateurs abonnes.
- *
- * Asynchrone car (a) un listener AFTER_COMMIT synchrone tient encore la connexion
- * du virement et (b) l'envoi push fait des appels reseau : il ne doit jamais
- * ralentir ni bloquer le chemin transactionnel du grand livre.
+ * Traite, de maniere ASYNCHRONE et APRES COMMIT, la creation des notifications
+ * (in-app + push) :
+ *  - sur un mouvement d'argent (MoneyMovedEvent) ;
+ *  - sur une notification applicative ponctuelle (UserNotificationEvent),
+ *    par ex. une demande de remboursement recue ou refusee.
  */
 @Component
 public class NotificationEventListener {
@@ -38,7 +36,18 @@ public class NotificationEventListener {
                 webPushService.sendToUser(m.userId(), m.title(), m.body());
             }
         } catch (Exception ignored) {
-            // Best-effort : une notification ratee ne doit rien casser.
+            // Best-effort.
+        }
+    }
+
+    @Async("notificationExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onUserNotification(UserNotificationEvent event) {
+        try {
+            notificationService.create(event.userId(), event.type(), event.title(), event.body());
+            webPushService.sendToUser(event.userId(), event.title(), event.body());
+        } catch (Exception ignored) {
+            // Best-effort.
         }
     }
 }

@@ -15,6 +15,7 @@ import { categoryLabel, categoryColor } from '../categories';
 import { ReceiveQR } from './ReceiveQR';
 import { QrScanner, type ScannedPay } from './QrScanner';
 import { NotificationsBell } from './NotificationsBell';
+import PaymentRequests from './PaymentRequests';
 
 export function Dashboard() {
   const { logout, isAdmin } = useAuth();
@@ -28,6 +29,7 @@ export function Dashboard() {
   const [showStats, setShowStats] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showRequests, setShowRequests] = useState(false);
   // Lien de paiement reçu par QR : /?pay=<compte>&amt=<centimes>&desc=<motif>
   const [payRequest, setPayRequest] = useState<{ iban: string; amount: string; desc: string } | null>(
     () => {
@@ -140,6 +142,7 @@ export function Dashboard() {
               setShowReceive((v) => !v);
               setShowStats(false);
               setShowAudit(false);
+              setShowRequests(false);
             }}
           >
             {showReceive ? 'Mes comptes' : 'Recevoir'}
@@ -150,9 +153,21 @@ export function Dashboard() {
           <button
             className="link"
             onClick={() => {
+              setShowRequests((v) => !v);
+              setShowStats(false);
+              setShowAudit(false);
+              setShowReceive(false);
+            }}
+          >
+            {showRequests ? 'Mes comptes' : 'Demandes'}
+          </button>
+          <button
+            className="link"
+            onClick={() => {
               setShowStats((v) => !v);
               setShowAudit(false);
               setShowReceive(false);
+              setShowRequests(false);
             }}
           >
             {showStats ? 'Mes comptes' : 'Statistiques'}
@@ -164,6 +179,7 @@ export function Dashboard() {
                 setShowAudit((v) => !v);
                 setShowStats(false);
                 setShowReceive(false);
+                setShowRequests(false);
               }}
             >
               {showAudit ? 'Mes comptes' : "Journal d'audit"}
@@ -194,6 +210,14 @@ export function Dashboard() {
       {showReceive ? (
         <main className="layout-single">
           <ReceiveQR accounts={accounts} onClose={() => setShowReceive(false)} />
+        </main>
+      ) : showRequests ? (
+        <main className="layout-single">
+          <PaymentRequests
+            accounts={accounts}
+            onClose={() => setShowRequests(false)}
+            onDone={afterMutation}
+          />
         </main>
       ) : showStats ? (
         <main className="layout-single">

@@ -67,6 +67,12 @@ public class NotificationService {
         return new PushMessage(userId, title, body);
     }
 
+    /** Cree une notification in-app isolee (hors mouvement d'argent). */
+    @Transactional
+    public PushMessage create(UUID userId, String type, String title, String body) {
+        return save(userId, type, title, body);
+    }
+
     @Transactional(readOnly = true)
     public List<Notification> list(UUID userId) {
         return notifications.findTop50ByUserIdOrderByCreatedAtDesc(userId);

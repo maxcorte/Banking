@@ -63,3 +63,16 @@ export interface NotificationItem {
   read: boolean;
   at: string;
 }
+
+export interface PaymentRequest {
+  id: string;
+  requesterName: string;
+  payerName: string;
+  toAccountNumber: string | null;
+  amountMinor: number;
+  currency: string;
+  description: string | null;
+  status: 'PENDING' | 'ACCEPTED' | 'REFUSED' | 'CANCELLED';
+  createdAt: string;
+  resolvedAt: string | null;
+}

@@ -1,4 +1,4 @@
-import type { Account, AuditEntry, Beneficiary, NotificationItem, Transaction, TransactionLine, UserInfo } from './types';
+import type { Account, AuditEntry, Beneficiary, NotificationItem, PaymentRequest, Transaction, TransactionLine, UserInfo } from './types';
 
 const BASE = '/api';
 
@@ -103,6 +103,28 @@ export const api = {
   listNotifications: () => request<NotificationItem[]>('/notifications'),
   unreadNotifications: () => request<{ count: number }>('/notifications/unread-count'),
   markNotificationsRead: () => request<void>('/notifications/read', { method: 'POST' }),
+
+  listIncomingRequests: () => request<PaymentRequest[]>('/payment-requests/incoming'),
+  listOutgoingRequests: () => request<PaymentRequest[]>('/payment-requests/outgoing'),
+  createPaymentRequest: (
+    toAccountId: string,
+    payerUsername: string,
+    amountMinor: number,
+    description: string,
+  ) =>
+    request<void>('/payment-requests', {
+      method: 'POST',
+      body: JSON.stringify({ toAccountId, payerUsername, amountMinor, description }),
+    }),
+  acceptPaymentRequest: (id: string, fromAccountId: string) =>
+    request<void>(`/payment-requests/${id}/accept`, {
+      method: 'POST',
+      body: JSON.stringify({ fromAccountId }),
+    }),
+  refusePaymentRequest: (id: string) =>
+    request<void>(`/payment-requests/${id}/refuse`, { method: 'POST' }),
+  cancelPaymentRequest: (id: string) =>
+    request<void>(`/payment-requests/${id}/cancel`, { method: 'POST' }),
 
   pushPublicKey: () =>
     request<{ publicKey: string | null; enabled: boolean }>('/push/public-key'),
