@@ -303,6 +303,9 @@ export function Dashboard() {
                                 </span>
                               )}
                             </span>
+                            {line.description && line.description !== 'Virement' && (
+                              <span className="history-note">« {line.description} »</span>
+                            )}
                             <span className="history-meta">
                               {new Date(line.at).toLocaleString('fr-FR')}
                               {line.counterpartyNumber ? ` · ${line.counterpartyNumber}` : ''}
