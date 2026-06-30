@@ -8,15 +8,13 @@ on:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
-  # Permet aussi de lancer le déploiement à la main depuis l'onglet Actions
-  # (bouton "Run workflow"), pratique pour tester la connexion SSH.
+  # Permet aussi de lancer le déploiement à la main depuis l'onglet Actions.
   workflow_dispatch:
 
 jobs:
   deploy:
     name: Déployer sur le VPS
     runs-on: ubuntu-latest
-    # On déploie si : déclenchement manuel, OU le workflow CI a réussi.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Connexion SSH et mise à jour de la prod
@@ -31,9 +29,9 @@ jobs:
             git pull --ff-only
             # Reconstruit et redémarre l'app (et la base si besoin).
             docker compose -f docker-compose.prod.yml up -d --build
-            # Caddy ne recharge pas tout seul un Caddyfile monté qui a changé :
-            # on le recharge explicitement (sans coupure), avec repli sur restart.
-            docker compose -f docker-compose.prod.yml exec -T caddy \
-              caddy reload --config /etc/caddy/Caddyfile \
-              || docker compose -f docker-compose.prod.yml restart caddy
+            # IMPORTANT : le Caddyfile est monté comme fichier unique. Un git pull
+            # le REMPLACE (nouvel inode), donc un conteneur Caddy déjà lancé continue
+            # de voir l'ancien fichier. On RECRÉE le conteneur Caddy pour qu'il
+            # remonte le Caddyfile à jour et applique la config courante.
+            docker compose -f docker-compose.prod.yml up -d --force-recreate caddy
             docker image prune -f
