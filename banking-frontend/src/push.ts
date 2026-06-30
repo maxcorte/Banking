@@ -37,22 +37,26 @@ export async function enablePush(): Promise<PushState> {
   if (!pushSupported()) return 'unsupported';
 
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    return permission === 'denied' ? 'denied' : 'disabled';
-  }
+  if (permission === 'denied') return 'denied';
+  if (permission !== 'granted') return 'disabled'; // refus/fermeture du prompt
 
   const { publicKey, enabled } = await api.pushPublicKey();
   if (!enabled || !publicKey) {
-    return 'disabled'; // serveur sans cles VAPID
+    throw new Error("Le serveur n'a pas encore de clés push configurées.");
   }
 
   const reg = await navigator.serviceWorker.ready;
   let sub = await reg.pushManager.getSubscription();
   if (!sub) {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
-    });
+    try {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error("Abonnement aux notifications impossible sur cet appareil. " + msg);
+    }
   }
   await api.subscribePush(sub.toJSON());
   return 'enabled';

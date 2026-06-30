@@ -44,29 +44,62 @@ export function QrScanner({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
     let raf = 0;
     let active = true;
 
+    function messageFor(err: unknown): string {
+      const name = (err as DOMException | undefined)?.name ?? '';
+      switch (name) {
+        case 'NotAllowedError':
+        case 'SecurityError':
+          return "Autorisation refusée. Autorise l'accès à la caméra pour ce site dans les réglages du navigateur, puis réessaie.";
+        case 'NotFoundError':
+        case 'OverconstrainedError':
+          return "Aucune caméra utilisable n'a été trouvée sur cet appareil.";
+        case 'NotReadableError':
+          return 'La caméra est déjà utilisée par une autre application. Ferme-la et réessaie.';
+        default:
+          return "Impossible d'accéder à la caméra. Vérifie l'autorisation et que le site est bien en HTTPS.";
+      }
+    }
+
     async function start() {
+      setError(null);
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError(
+          "La caméra n'est pas disponible ici (un contexte sécurisé HTTPS est requis).",
+        );
+        return;
+      }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-          audio: false,
-        });
+        try {
+          // Caméra arrière de préférence…
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' },
+            audio: false,
+          });
+        } catch (inner) {
+          // …mais certaines caméras refusent cette contrainte : on réessaie
+          // avec n'importe quelle caméra (sauf si l'autorisation est refusée).
+          const name = (inner as DOMException).name;
+          if (name === 'NotAllowedError' || name === 'SecurityError') {
+            throw inner;
+          }
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
         const video = videoRef.current;
         if (!video) return;
         video.srcObject = stream;
         video.setAttribute('playsinline', 'true');
         await video.play();
         tick();
-      } catch {
+      } catch (err) {
         if (active) {
-          setError(
-            "Impossible d'accéder à la caméra. Vérifie l'autorisation du navigateur (et l'HTTPS).",
-          );
+          setError(messageFor(err));
         }
       }
     }
@@ -106,7 +139,7 @@ export function QrScanner({
 
     start();
     return cleanup;
-  }, [onDetected]);
+  }, [onDetected, attempt]);
 
   return (
     <div className="scanner-overlay" onClick={onClose}>
@@ -119,7 +152,12 @@ export function QrScanner({
         </div>
 
         {error ? (
-          <p className="error">{error}</p>
+          <div className="scanner-error">
+            <p className="error">{error}</p>
+            <button type="button" className="ghost" onClick={() => setAttempt((a) => a + 1)}>
+              Réessayer
+            </button>
+          </div>
         ) : (
           <>
             <div className="scanner-frame">

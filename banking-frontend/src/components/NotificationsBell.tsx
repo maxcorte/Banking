@@ -13,6 +13,7 @@ export function NotificationsBell() {
   const [unread, setUnread] = useState(0);
   const [pushState, setPushState] = useState<PushState>('disabled');
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
 
   async function refreshCount() {
@@ -62,10 +63,17 @@ export function NotificationsBell() {
 
   async function onTogglePush() {
     setPushBusy(true);
+    setPushError(null);
     try {
-      setPushState(pushState === 'enabled' ? await disablePush() : await enablePush());
-    } catch {
-      /* ignore */
+      const next = pushState === 'enabled' ? await disablePush() : await enablePush();
+      setPushState(next);
+      if (next === 'denied') {
+        setPushError(
+          "Autorisation refusée. Active les notifications pour ce site dans les réglages du navigateur, puis réessaie.",
+        );
+      }
+    } catch (e) {
+      setPushError(e instanceof Error ? e.message : "Activation impossible.");
     } finally {
       setPushBusy(false);
     }
@@ -76,13 +84,6 @@ export function NotificationsBell() {
       return (
         <p className="notif-push-hint">
           Installe l'app sur l'écran d'accueil pour recevoir les alertes push.
-        </p>
-      );
-    }
-    if (pushState === 'denied') {
-      return (
-        <p className="notif-push-hint">
-          Notifications bloquées par le navigateur (à réautoriser dans ses réglages).
         </p>
       );
     }
@@ -127,7 +128,10 @@ export function NotificationsBell() {
               ))}
             </ul>
           )}
-          <div className="notif-foot">{pushFooter()}</div>
+          <div className="notif-foot">
+            {pushFooter()}
+            {pushError && <p className="notif-push-error">{pushError}</p>}
+          </div>
         </div>
       )}
     </div>

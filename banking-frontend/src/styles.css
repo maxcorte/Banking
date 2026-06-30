@@ -1048,3 +1048,17 @@ button.danger:hover:not(:disabled) {
   font-size: 0.8rem;
   color: var(--muted);
 }
+
+/* Erreur d'activation des notifications push */
+.notif-push-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #ef4444;
+}
+/* Bloc d'erreur du scanner (message + bouton réessayer) */
+.scanner-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
