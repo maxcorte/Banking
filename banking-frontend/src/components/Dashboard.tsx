@@ -13,6 +13,7 @@ import { SpendingStats } from './SpendingStats';
 import { downloadStatementCsv, printStatement } from '../statement';
 import { categoryLabel, categoryColor } from '../categories';
 import { ReceiveQR } from './ReceiveQR';
+import { QrScanner, type ScannedPay } from './QrScanner';
 
 export function Dashboard() {
   const { logout, isAdmin } = useAuth();
@@ -25,6 +26,7 @@ export function Dashboard() {
   const [showAudit, setShowAudit] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   // Lien de paiement reçu par QR : /?pay=<compte>&amt=<centimes>&desc=<motif>
   const [payRequest, setPayRequest] = useState<{ iban: string; amount: string; desc: string } | null>(
     () => {
@@ -70,6 +72,14 @@ export function Dashboard() {
   function clearPayRequest() {
     setPayRequest(null);
     window.history.replaceState(null, '', '/');
+  }
+
+  function handleScan(pay: ScannedPay) {
+    setShowScanner(false);
+    setShowReceive(false);
+    setShowStats(false);
+    setShowAudit(false);
+    setPayRequest({ iban: pay.iban, amount: pay.amount, desc: pay.desc });
   }
 
   // Demande de paiement reçue mais aucun compte choisi : on en sélectionne un
@@ -131,6 +141,9 @@ export function Dashboard() {
             }}
           >
             {showReceive ? 'Mes comptes' : 'Recevoir'}
+          </button>
+          <button className="link" onClick={() => setShowScanner(true)}>
+            Scanner
           </button>
           <button
             className="link"
@@ -339,6 +352,10 @@ export function Dashboard() {
           )}
         </section>
       </main>
+      )}
+
+      {showScanner && (
+        <QrScanner onDetected={handleScan} onClose={() => setShowScanner(false)} />
       )}
     </div>
   );
