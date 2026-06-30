@@ -9,6 +9,7 @@ import com.example.banking.exception.InsufficientFundsException;
 import com.example.banking.exception.InvalidTransferException;
 import com.example.banking.repository.AccountRepository;
 import com.example.banking.repository.TransactionRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +22,14 @@ public class TransferService {
 
     private final AccountRepository accounts;
     private final TransactionRepository transactions;
+    private final ApplicationEventPublisher events;
 
-    public TransferService(AccountRepository accounts, TransactionRepository transactions) {
+    public TransferService(AccountRepository accounts,
+                           TransactionRepository transactions,
+                           ApplicationEventPublisher events) {
         this.accounts = accounts;
         this.transactions = transactions;
+        this.events = events;
     }
 
     /**
@@ -104,6 +109,14 @@ public class TransferService {
         to.credit(amountMinor);
 
         // 7. Persistance (le solde des comptes managés est écrit au commit)
-        return transactions.save(tx);
+        BankTransaction saved = transactions.save(tx);
+
+        // 8. Notifie (apres commit) les proprietaires des comptes concernes.
+        //    L'evenement est traite APRES le commit : aucune incidence sur le
+        //    grand livre si la notification echoue.
+        events.publishEvent(new MoneyMovedEvent(
+                from.getId(), to.getId(), amountMinor, currency, description));
+
+        return saved;
     }
 }

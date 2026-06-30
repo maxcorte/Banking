@@ -54,3 +54,12 @@ export interface TransactionLine {
   category: string | null;
   balanceAfterMinor: number;
 }
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  read: boolean;
+  at: string;
+}

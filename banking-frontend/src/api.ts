@@ -1,4 +1,4 @@
-import type { Account, AuditEntry, Beneficiary, Transaction, TransactionLine, UserInfo } from './types';
+import type { Account, AuditEntry, Beneficiary, NotificationItem, Transaction, TransactionLine, UserInfo } from './types';
 
 const BASE = '/api';
 
@@ -99,6 +99,10 @@ export const api = {
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
 
   me: () => request<UserInfo>('/auth/me'),
+
+  listNotifications: () => request<NotificationItem[]>('/notifications'),
+  unreadNotifications: () => request<{ count: number }>('/notifications/unread-count'),
+  markNotificationsRead: () => request<void>('/notifications/read', { method: 'POST' }),
 
   // Restaure la session au chargement SANS declencher l'evenement global
   // 'auth:expired' : on sonde /me, et si l'acces est expire on tente un seul

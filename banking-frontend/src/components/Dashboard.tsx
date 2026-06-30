@@ -14,6 +14,7 @@ import { downloadStatementCsv, printStatement } from '../statement';
 import { categoryLabel, categoryColor } from '../categories';
 import { ReceiveQR } from './ReceiveQR';
 import { QrScanner, type ScannedPay } from './QrScanner';
+import { NotificationsBell } from './NotificationsBell';
 
 export function Dashboard() {
   const { logout, isAdmin } = useAuth();
@@ -131,6 +132,7 @@ export function Dashboard() {
       <header className="topbar">
         <span className="brand">Ma Banque</span>
         <div className="row">
+          <NotificationsBell />
           <ThemeToggle />
           <button
             className="link"
