@@ -12,6 +12,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { SpendingStats } from './SpendingStats';
 import { downloadStatementCsv, printStatement } from '../statement';
 import { categoryLabel, categoryColor } from '../categories';
+import { ReceiveQR } from './ReceiveQR';
 
 export function Dashboard() {
   const { logout, isAdmin } = useAuth();
@@ -23,6 +24,21 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showAudit, setShowAudit] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showReceive, setShowReceive] = useState(false);
+  // Lien de paiement reçu par QR : /?pay=<compte>&amt=<centimes>&desc=<motif>
+  const [payRequest, setPayRequest] = useState<{ iban: string; amount: string; desc: string } | null>(
+    () => {
+      const p = new URLSearchParams(window.location.search);
+      const pay = p.get('pay');
+      if (!pay) return null;
+      const amt = p.get('amt');
+      return {
+        iban: pay,
+        amount: amt && Number(amt) > 0 ? (Number(amt) / 100).toFixed(2) : '',
+        desc: p.get('desc') ?? '',
+      };
+    },
+  );
 
   const loadBeneficiaries = useCallback(async () => {
     try {
@@ -50,6 +66,20 @@ export function Dashboard() {
     refresh();
     loadBeneficiaries();
   }, [refresh, loadBeneficiaries]);
+
+  function clearPayRequest() {
+    setPayRequest(null);
+    window.history.replaceState(null, '', '/');
+  }
+
+  // Demande de paiement reçue mais aucun compte choisi : on en sélectionne un
+  // automatiquement pour pré-remplir le virement.
+  useEffect(() => {
+    if (payRequest && !selected && accounts.length > 0) {
+      void selectAccount(accounts[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payRequest, selected, accounts]);
 
   async function selectAccount(account: Account) {
     setSelected(account);
@@ -95,8 +125,19 @@ export function Dashboard() {
           <button
             className="link"
             onClick={() => {
+              setShowReceive((v) => !v);
+              setShowStats(false);
+              setShowAudit(false);
+            }}
+          >
+            {showReceive ? 'Mes comptes' : 'Recevoir'}
+          </button>
+          <button
+            className="link"
+            onClick={() => {
               setShowStats((v) => !v);
               setShowAudit(false);
+              setShowReceive(false);
             }}
           >
             {showStats ? 'Mes comptes' : 'Statistiques'}
@@ -107,6 +148,7 @@ export function Dashboard() {
               onClick={() => {
                 setShowAudit((v) => !v);
                 setShowStats(false);
+                setShowReceive(false);
               }}
             >
               {showAudit ? 'Mes comptes' : "Journal d'audit"}
@@ -118,7 +160,27 @@ export function Dashboard() {
         </div>
       </header>
 
-      {showStats ? (
+      {payRequest && (
+        <div className="pay-banner">
+          <span>
+            Demande de paiement
+            {payRequest.amount ? ` de ${payRequest.amount} €` : ''} vers{' '}
+            <strong>{payRequest.iban}</strong>.
+            {selected
+              ? ' Vérifie et confirme le virement ci-dessous.'
+              : ' Choisis le compte à débiter.'}
+          </span>
+          <button className="ghost" onClick={clearPayRequest}>
+            Annuler
+          </button>
+        </div>
+      )}
+
+      {showReceive ? (
+        <main className="layout-single">
+          <ReceiveQR accounts={accounts} onClose={() => setShowReceive(false)} />
+        </main>
+      ) : showStats ? (
         <main className="layout-single">
           <SpendingStats onClose={() => setShowStats(false)} />
         </main>
@@ -181,10 +243,17 @@ export function Dashboard() {
                 <p className="muted">Les dépôts sont réservés à l'administrateur.</p>
               )}
               <TransferForm
+                key={payRequest ? 'pay' : 'normal'}
                 from={selected}
                 beneficiaries={beneficiaries}
-                onDone={afterMutation}
+                onDone={() => {
+                  void afterMutation();
+                  if (payRequest) clearPayRequest();
+                }}
                 onBeneficiariesChanged={loadBeneficiaries}
+                initialIban={payRequest?.iban}
+                initialAmount={payRequest?.amount}
+                initialDescription={payRequest?.desc}
               />
 
               <div className="section-head">

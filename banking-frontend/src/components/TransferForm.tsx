@@ -8,11 +8,24 @@ interface Props {
   beneficiaries: Beneficiary[];
   onDone: () => void;
   onBeneficiariesChanged: () => void;
+  // Pré-remplissage (ex. depuis un QR code / lien de paiement).
+  initialIban?: string;
+  initialAmount?: string; // en euros, ex. "12.50"
+  initialDescription?: string;
 }
 
-export function TransferForm({ from, beneficiaries, onDone, onBeneficiariesChanged }: Props) {
-  const [iban, setIban] = useState('');
-  const [amount, setAmount] = useState('');
+export function TransferForm({
+  from,
+  beneficiaries,
+  onDone,
+  onBeneficiariesChanged,
+  initialIban = '',
+  initialAmount = '',
+  initialDescription = '',
+}: Props) {
+  const [iban, setIban] = useState(initialIban);
+  const [amount, setAmount] = useState(initialAmount);
+  const [description, setDescription] = useState(initialDescription);
   const [category, setCategory] = useState('AUTRES');
   const [save, setSave] = useState(false);
   const [label, setLabel] = useState('');
@@ -25,7 +38,8 @@ export function TransferForm({ from, beneficiaries, onDone, onBeneficiariesChang
     setBusy(true);
     try {
       const minor = Math.round(parseFloat(amount) * 100);
-      await api.transfer(from.id, iban.trim(), minor, 'Virement', category);
+      const motif = description.trim() || 'Virement';
+      await api.transfer(from.id, iban.trim(), minor, motif, category);
       if (save && label.trim()) {
         try {
           await api.addBeneficiary(label.trim(), iban.trim());
@@ -36,6 +50,7 @@ export function TransferForm({ from, beneficiaries, onDone, onBeneficiariesChang
       }
       setIban('');
       setAmount('');
+      setDescription('');
       setLabel('');
       setCategory('AUTRES');
       setSave(false);
@@ -87,10 +102,18 @@ export function TransferForm({ from, beneficiaries, onDone, onBeneficiariesChang
         required
       />
 
+      <input
+        placeholder="Communication (optionnel)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        style={{ marginTop: '0.6rem' }}
+      />
+
       <select
         className="category-select"
         value={category}
         onChange={(e) => setCategory(e.target.value)}
+        style={{ marginTop: '0.6rem' }}
       >
         {CATEGORIES.map((c) => (
           <option key={c.value} value={c.value}>
