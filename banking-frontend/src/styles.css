@@ -1010,3 +1010,12 @@ button.danger:hover:not(:disabled) {
   font-size: 0.72rem;
   color: var(--muted);
 }
+
+/* Sur mobile, la cloche est à gauche du header : le panneau doit s'ouvrir vers
+   la droite (et non vers la gauche, hors écran). */
+@media (max-width: 760px) {
+  .notif-panel {
+    left: 0;
+    right: auto;
+  }
+}
