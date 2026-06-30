@@ -49,6 +49,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+        <!-- Envoi d'e-mails (reinitialisation de mot de passe) via SMTP. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
         <!-- Migrations de schema versionnees.
              En Spring Boot 4, l'auto-configuration Flyway est dans un module
              dedie : il faut le starter, pas seulement flyway-core. -->

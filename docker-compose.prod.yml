@@ -38,6 +38,18 @@ services:
       ENFORCE_SECRETS: "true"
       # Caddy fournit le HTTPS : les cookies Secure sont donc corrects.
       COOKIE_SECURE: "true"
+      # --- E-mail (reinitialisation de mot de passe) ---
+      # Valeurs vides par defaut : un deploiement ne casse jamais ; le "mot de
+      # passe oublie" n'enverra des e-mails qu'une fois ces variables renseignees.
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-465}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SSL: ${MAIL_SSL:-true}
+      MAIL_STARTTLS: ${MAIL_STARTTLS:-false}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@maximedelcorte.cloud}
+      # URL publique, pour construire le lien envoye par e-mail.
+      APP_BASE_URL: ${APP_BASE_URL:-https://maximedelcorte.cloud}
     expose:
       - "8080"          # accessible seulement par Caddy, jamais publiquement.
 

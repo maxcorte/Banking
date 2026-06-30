@@ -3,7 +3,7 @@ import type { Account, AuditEntry, Beneficiary, Transaction, TransactionLine, Us
 const BASE = '/api';
 
 // Routes d'auth qui ne doivent jamais declencher un refresh automatique.
-const NO_REFRESH = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
+const NO_REFRESH = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout', '/auth/forgot-password', '/auth/reset-password'];
 
 // Un seul refresh a la fois, partage entre les requetes concurrentes.
 let refreshing: Promise<boolean> | null = null;
@@ -72,10 +72,22 @@ async function request<T>(path: string, options: RequestInit = {}, retry = true)
 }
 
 export const api = {
-  register: (username: string, password: string) =>
+  register: (username: string, email: string, password: string) =>
     request<void>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, email, password }),
+    }),
+
+  forgotPassword: (email: string) =>
+    request<void>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, password: string) =>
+    request<void>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
     }),
 
   login: (username: string, password: string) =>

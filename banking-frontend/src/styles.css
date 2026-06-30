@@ -763,3 +763,13 @@ button.danger:hover:not(:disabled) {
     font-size: 0.85rem;
   }
 }
+
+/* Message d'information (succès / confirmation) dans les formulaires d'auth */
+.info-message {
+  background: var(--accent-soft, #ecfdf5);
+  border: 1px solid var(--border, #a7f3d0);
+  color: var(--text, #065f46);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+}

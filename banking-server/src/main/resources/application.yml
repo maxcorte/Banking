@@ -21,6 +21,25 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  # Envoi d'e-mails (reinitialisation de mot de passe). Renseigner via les
+  # variables MAIL_* en production. Sans configuration, l'app demarre quand
+  # meme et le lien est journalise au lieu d'etre envoye (pratique en dev).
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          # Port 465 = SSL direct (cas Hostinger). Port 587 = STARTTLS (ex. Brevo).
+          # On pilote les deux par variables d'environnement.
+          ssl:
+            enable: ${MAIL_SSL:true}
+          starttls:
+            enable: ${MAIL_STARTTLS:false}
+
 server:
   port: 8080
 
@@ -45,6 +64,15 @@ app:
     # Cookies d'authentification Secure (HTTPS uniquement). En HTTP local
     # pur, mettre COOKIE_SECURE=false. Via Funnel (HTTPS) : laisser true.
     cookie-secure: ${COOKIE_SECURE:true}
+  # URL publique de l'app, utilisee pour construire le lien de reinitialisation
+  # envoye par e-mail (ex. https://maximedelcorte.cloud).
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  mail:
+    # Adresse expediteur des e-mails transactionnels.
+    from: ${MAIL_FROM:no-reply@localhost}
+  reset:
+    # Duree de validite d'un lien de reinitialisation (defaut : 30 min).
+    expiration-ms: ${RESET_EXPIRATION_MS:1800000}
 
 spring.mvc.problemdetails.enabled: true
 

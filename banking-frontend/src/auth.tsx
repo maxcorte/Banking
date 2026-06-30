@@ -7,7 +7,7 @@ interface AuthContextValue {
   loading: boolean;
   isAdmin: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -53,8 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me);
   }
 
-  async function register(username: string, password: string) {
-    await api.register(username, password);
+  async function register(username: string, email: string, password: string) {
+    await api.register(username, email, password);
     await login(username, password);
   }
 

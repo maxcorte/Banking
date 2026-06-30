@@ -37,15 +37,19 @@ public class AuthService {
     }
 
     @Transactional
-    public void register(String username, String rawPassword) {
+    public void register(String username, String email, String rawPassword) {
         if (users.existsByUsername(username)) {
             throw new BankingException("USERNAME_TAKEN", "Nom d'utilisateur déjà pris.");
+        }
+        if (users.existsByEmail(email)) {
+            throw new BankingException("EMAIL_TAKEN", "Adresse e-mail déjà utilisée.");
         }
         User user = new User(
                 UUID.randomUUID(),
                 username,
                 passwordEncoder.encode(rawPassword),
                 Role.USER);
+        user.setEmail(email);
         users.save(user);
         auditService.recordAs(username, "REGISTER", "Inscription d'un nouvel utilisateur.");
     }

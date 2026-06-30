@@ -6,8 +6,11 @@ import com.example.banking.security.AuthCookies;
 import com.example.banking.security.CurrentUser;
 import com.example.banking.service.AuthResult;
 import com.example.banking.service.AuthService;
+import com.example.banking.service.PasswordResetService;
 import com.example.banking.web.dto.LoginRequest;
+import com.example.banking.web.dto.ForgotPasswordRequest;
 import com.example.banking.web.dto.RegisterRequest;
+import com.example.banking.web.dto.ResetPasswordRequest;
 import com.example.banking.web.dto.UserInfoResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,11 +23,16 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
     private final AuthCookies cookies;
     private final CurrentUser currentUser;
 
-    public AuthController(AuthService authService, AuthCookies cookies, CurrentUser currentUser) {
+    public AuthController(AuthService authService,
+                          PasswordResetService passwordResetService,
+                          AuthCookies cookies,
+                          CurrentUser currentUser) {
         this.authService = authService;
+        this.passwordResetService = passwordResetService;
         this.cookies = cookies;
         this.currentUser = currentUser;
     }
@@ -32,7 +40,7 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public void register(@Valid @RequestBody RegisterRequest request) {
-        authService.register(request.username(), request.password());
+        authService.register(request.username(), request.email(), request.password());
     }
 
     @PostMapping("/login")
@@ -59,6 +67,21 @@ public class AuthController {
     public void logout(HttpServletRequest request, HttpServletResponse response) {
         cookies.read(request, AuthCookies.REFRESH).ifPresent(authService::logout);
         cookies.clear(response);
+    }
+
+    /** Demande de reinitialisation : envoie un lien par e-mail si le compte existe.
+     *  Reponse identique dans tous les cas (on ne revele pas les comptes existants). */
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestReset(request.email());
+    }
+
+    /** Applique un nouveau mot de passe a partir d'un jeton recu par e-mail. */
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.reset(request.token(), request.password());
     }
 
     /** Identite de l'utilisateur connecte (le frontend ne lit plus le jeton). */
