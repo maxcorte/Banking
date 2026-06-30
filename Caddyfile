@@ -2,5 +2,36 @@
 # pour le domaine défini dans .env, et redirige le trafic vers l'app.
 {$DOMAIN} {
 	encode gzip
+
+	# --- En-têtes de sécurité HTTP ---
+	# Caddy POSE (remplace) ces en-têtes sur chaque réponse. Ils protègent
+	# contre plusieurs classes d'attaques web courantes.
+	header {
+		# Force le navigateur à n'utiliser que HTTPS pendant 1 an (et à le
+		# mémoriser), y compris pour les sous-domaines. Évite tout retour en HTTP.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+		# Empêche le navigateur de « deviner » le type d'un fichier (anti-MIME-sniffing).
+		X-Content-Type-Options "nosniff"
+
+		# Interdit d'afficher le site dans une iframe (anti-clickjacking).
+		X-Frame-Options "DENY"
+
+		# Ne fuite pas l'URL complète vers les sites tiers.
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Désactive des API sensibles dont l'app n'a pas besoin.
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+		# Politique de sécurité du contenu : tout vient de la même origine.
+		# 'unsafe-inline' n'est gardé que pour les styles (l'app n'injecte
+		# aucun script en ligne). Resserre encore si tu sais que tu n'as
+		# aucun style inline.
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+
+		# Ne révèle pas la techno serveur.
+		-Server
+	}
+
 	reverse_proxy app:8080
 }
