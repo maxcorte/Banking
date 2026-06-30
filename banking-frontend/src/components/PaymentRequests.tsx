@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, formatEuros } from '../api';
-import type { Account, PaymentRequest } from '../types';
+import type { Account, Contact, PaymentRequest } from '../types';
 
 const STATUS_LABEL: Record<PaymentRequest['status'], string> = {
   PENDING: 'En attente',
@@ -33,6 +33,7 @@ export default function PaymentRequests({
   const [payer, setPayer] = useState('');
   const [amount, setAmount] = useState('');
   const [desc, setDesc] = useState('');
+  const [contacts, setContacts] = useState<Contact[]>([]);
 
   // Compte choisi pour payer chaque demande reçue (par id de demande)
   const [fromByReq, setFromByReq] = useState<Record<string, string>>({});
@@ -52,6 +53,7 @@ export default function PaymentRequests({
 
   useEffect(() => {
     reload();
+    api.listContacts().then(setContacts).catch(() => setContacts([]));
   }, []);
 
   async function submitNew() {
@@ -187,11 +189,30 @@ export default function PaymentRequests({
                 ))}
               </select>
             </label>
-            <input
-              placeholder="Destinataire (nom d'utilisateur)"
-              value={payer}
-              onChange={(e) => setPayer(e.target.value)}
-            />
+            {contacts.length > 0 ? (
+              <label>
+                Destinataire
+                <select value={payer} onChange={(e) => setPayer(e.target.value)}>
+                  <option value="">— Choisir un contact —</option>
+                  {contacts.map((c) => (
+                    <option key={c.userId} value={c.username}>
+                      {c.username}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <>
+                <input
+                  placeholder="Destinataire (nom d'utilisateur)"
+                  value={payer}
+                  onChange={(e) => setPayer(e.target.value)}
+                />
+                <span className="muted">
+                  Astuce : ajoute des contacts pour les choisir dans une liste.
+                </span>
+              </>
+            )}
             <input
               placeholder="Montant en €"
               inputMode="decimal"

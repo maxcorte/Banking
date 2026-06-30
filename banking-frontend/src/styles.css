@@ -1254,3 +1254,39 @@ button.danger:hover:not(:disabled) {
   .footbar { justify-content: center; gap: 0.5rem; }
   .footbar button { flex: 0 0 auto; min-width: 86px; }
 }
+
+/* ===== Carnet de contacts ===== */
+.contacts-card { max-width: 560px; margin: 0 auto; }
+.contacts-add { display: flex; gap: 0.5rem; margin: 0.75rem 0; }
+.contacts-add input {
+  flex: 1;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.contacts-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+}
+.contact-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.contact-name { font-weight: 600; }
+.contact-remove { margin-left: auto; }

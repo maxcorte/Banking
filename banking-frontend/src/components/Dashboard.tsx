@@ -16,6 +16,7 @@ import { ReceiveQR } from './ReceiveQR';
 import { QrScanner, type ScannedPay } from './QrScanner';
 import { NotificationsBell } from './NotificationsBell';
 import PaymentRequests from './PaymentRequests';
+import Contacts from './Contacts';
 
 export function Dashboard() {
   const { logout, isAdmin } = useAuth();
@@ -30,6 +31,7 @@ export function Dashboard() {
   const [showReceive, setShowReceive] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
+  const [showContacts, setShowContacts] = useState(false);
   // Lien de paiement reçu par QR : /?pay=<compte>&amt=<centimes>&desc=<motif>
   const [payRequest, setPayRequest] = useState<{ iban: string; amount: string; desc: string } | null>(
     () => {
@@ -129,14 +131,15 @@ export function Dashboard() {
     }
   }
 
-  function openSection(which: 'home' | 'receive' | 'requests' | 'stats' | 'audit') {
+  function openSection(which: 'home' | 'receive' | 'requests' | 'contacts' | 'stats' | 'audit') {
     setShowReceive(which === 'receive');
     setShowRequests(which === 'requests');
+    setShowContacts(which === 'contacts');
     setShowStats(which === 'stats');
     setShowAudit(which === 'audit');
   }
 
-  const anyPanel = showReceive || showRequests || showStats || showAudit;
+  const anyPanel = showReceive || showRequests || showContacts || showStats || showAudit;
 
   return (
     <div className="app">
@@ -178,6 +181,10 @@ export function Dashboard() {
             onClose={() => setShowRequests(false)}
             onDone={afterMutation}
           />
+        </main>
+      ) : showContacts ? (
+        <main className="layout-single">
+          <Contacts onClose={() => setShowContacts(false)} />
         </main>
       ) : showStats ? (
         <main className="layout-single">
@@ -360,6 +367,10 @@ export function Dashboard() {
         <button className={showRequests ? 'active' : ''} onClick={() => openSection('requests')}>
           <span className="fb-ico">💬</span>
           <span className="fb-lbl">Demandes</span>
+        </button>
+        <button className={showContacts ? 'active' : ''} onClick={() => openSection('contacts')}>
+          <span className="fb-ico">👥</span>
+          <span className="fb-lbl">Contacts</span>
         </button>
         <button className={showStats ? 'active' : ''} onClick={() => openSection('stats')}>
           <span className="fb-ico">📊</span>

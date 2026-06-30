@@ -84,3 +84,8 @@ export interface AuditPage {
   total: number;
   hasMore: boolean;
 }
+
+export interface Contact {
+  userId: string;
+  username: string;
+}
