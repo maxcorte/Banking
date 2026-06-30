@@ -4,6 +4,8 @@ import com.example.banking.domain.AuditEntry;
 import com.example.banking.repository.AuditEntryRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -53,8 +55,10 @@ public class AuditService {
     public Page<AuditEntry> page(String q, int page, int size) {
         int p = Math.max(0, page);
         int s = Math.min(Math.max(1, size), 100);
+        Pageable pageable = PageRequest.of(p, s, Sort.by(Sort.Direction.DESC, "at"));
         String query = (q == null || q.isBlank()) ? null : q.trim();
-        return repository.search(query, PageRequest.of(p, s));
+        // Pas de recherche : on liste tout (trie). Sinon, requete LIKE.
+        return query == null ? repository.findAll(pageable) : repository.search(query, pageable);
     }
 
     private void save(String actor, String action, String detail) {

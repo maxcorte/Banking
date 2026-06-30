@@ -14,14 +14,19 @@ public interface AuditEntryRepository extends JpaRepository<AuditEntry, UUID> {
 
     List<AuditEntry> findAllByOrderByAtDesc(Pageable pageable);
 
-    /** Recherche paginee : si q est null, renvoie tout (trie par date desc). */
-    @Query("""
-        select a from AuditEntry a
-        where :q is null
-           or lower(a.actor)  like lower(concat('%', :q, '%'))
-           or lower(a.action) like lower(concat('%', :q, '%'))
-           or lower(a.detail) like lower(concat('%', :q, '%'))
-        order by a.at desc
-        """)
+    /** Recherche paginee (q non-null) sur acteur / action / detail. Le tri est
+     *  fourni par le Pageable. */
+    @Query(value = """
+            select a from AuditEntry a
+            where lower(a.actor)  like lower(concat('%', :q, '%'))
+               or lower(a.action) like lower(concat('%', :q, '%'))
+               or lower(a.detail) like lower(concat('%', :q, '%'))
+            """,
+            countQuery = """
+            select count(a) from AuditEntry a
+            where lower(a.actor)  like lower(concat('%', :q, '%'))
+               or lower(a.action) like lower(concat('%', :q, '%'))
+               or lower(a.detail) like lower(concat('%', :q, '%'))
+            """)
     Page<AuditEntry> search(@Param("q") String q, Pageable pageable);
 }

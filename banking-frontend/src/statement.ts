@@ -66,26 +66,37 @@ export async function downloadStatementPdf(account: Account, lines: TransactionL
   const { jsPDF } = await import('jspdf');
   const autoTable = (await import('jspdf-autotable')).default;
 
+  // IMPORTANT : la police PDF standard ne gère pas les espaces fines
+  // insécables (U+202F) ni le moins typographique (U+2212) que produit
+  // Intl.NumberFormat. On formate donc en ASCII pur.
+  const euroAbs = (minorAbs: number): string => {
+    const [int, dec] = (Math.abs(minorAbs) / 100).toFixed(2).split('.');
+    const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `${grouped},${dec} EUR`;
+  };
+  const signedEuro = (minor: number): string => (minor < 0 ? '-' : '') + euroAbs(minor);
+
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const marginX = 40;
 
   doc.setFontSize(16);
+  doc.setTextColor(26, 34, 54);
   doc.text('Relevé de compte', marginX, 48);
   doc.setFontSize(10);
   doc.setTextColor(107, 116, 136);
-  doc.text(`${account.ownerName} · ${account.accountNumber}`, marginX, 66);
-  doc.text(`Solde actuel : ${eurosLabel(account.balanceMinor)}`, marginX, 80);
-  doc.text(`Édité le ${new Date().toLocaleString('fr-FR')}`, marginX, 94);
+  doc.text(`${account.ownerName} - ${account.accountNumber}`, marginX, 66);
+  doc.text(`Solde actuel : ${signedEuro(account.balanceMinor)}`, marginX, 80);
+  doc.text(`Edite le ${new Date().toLocaleString('fr-FR')}`, marginX, 94);
 
   const body = lines.map((l) => {
     const incoming = l.amountMinor >= 0;
     const cat = categoryLabel(l.category);
-    const op = l.counterpartyName ? `${typeLabel(l)} — ${l.counterpartyName}` : typeLabel(l);
+    const op = l.counterpartyName ? `${typeLabel(l)} - ${l.counterpartyName}` : typeLabel(l);
     return [
       new Date(l.at).toLocaleString('fr-FR'),
       cat ? `${op} (${cat})` : op,
-      `${incoming ? '+' : '−'}${eurosLabel(Math.abs(l.amountMinor))}`,
-      eurosLabel(l.balanceAfterMinor),
+      `${incoming ? '+' : '-'}${euroAbs(l.amountMinor)}`,
+      signedEuro(l.balanceAfterMinor),
     ];
   });
 
@@ -93,13 +104,16 @@ export async function downloadStatementPdf(account: Account, lines: TransactionL
     startY: 112,
     head: [['Date', 'Opération', 'Montant', 'Solde']],
     body,
-    styles: { fontSize: 8, cellPadding: 4 },
+    styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
     headStyles: { fillColor: [31, 111, 235], textColor: 255 },
     columnStyles: {
-      2: { halign: 'right' },
-      3: { halign: 'right' },
+      0: { cellWidth: 105 },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 78, halign: 'right' },
+      3: { cellWidth: 78, halign: 'right' },
     },
     margin: { left: marginX, right: marginX },
+    tableWidth: 'auto',
   });
 
   doc.save(`releve-${account.accountNumber}.pdf`);
