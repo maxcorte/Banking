@@ -1015,12 +1015,17 @@ button.danger:hover:not(:disabled) {
   color: var(--muted);
 }
 
-/* La cloche est en haut à droite : le panneau s'ouvre vers la gauche
-   (ancré à droite) sur toutes les tailles, il reste donc à l'écran. */
+/* Sur mobile, la cloche n'est pas au bord droit (thème + déconnexion suivent) :
+   on détache le panneau et on l'affiche pleine largeur sous le header, pour
+   qu'il ne parte ni trop à gauche ni hors écran. */
 @media (max-width: 760px) {
   .notif-panel {
-    right: 0;
-    left: auto;
+    position: fixed;
+    top: calc(56px + env(safe-area-inset-top, 0px));
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: 70vh;
   }
 }
 
@@ -1308,4 +1313,27 @@ button.danger:hover:not(:disabled) {
   color: var(--muted);
   font-family: ui-monospace, monospace;
   word-break: break-all;
+}
+
+/* Bascule contact / nouveau bénéficiaire dans le virement */
+.transfer-mode {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.transfer-mode button {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.transfer-mode button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }

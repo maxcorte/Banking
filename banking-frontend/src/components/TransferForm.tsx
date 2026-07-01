@@ -23,6 +23,13 @@ export function TransferForm({
   initialAmount = '',
   initialDescription = '',
 }: Props) {
+  const hasContacts = beneficiaries.length > 0;
+  // Par défaut : virement à un contact. On bascule en « nouveau bénéficiaire »
+  // s'il n'y a aucun contact, ou si un IBAN est pré-rempli (QR / lien).
+  const [mode, setMode] = useState<'contact' | 'new'>(
+    initialIban || !hasContacts ? 'new' : 'contact',
+  );
+  const [contactIban, setContactIban] = useState('');
   const [iban, setIban] = useState(initialIban);
   const [amount, setAmount] = useState(initialAmount);
   const [description, setDescription] = useState(initialDescription);
@@ -35,19 +42,27 @@ export function TransferForm({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const target = (mode === 'contact' ? contactIban : iban).trim();
+    if (!target) {
+      setError(mode === 'contact' ? 'Choisis un contact.' : 'Saisis un IBAN.');
+      return;
+    }
+
     setBusy(true);
     try {
       const minor = Math.round(parseFloat(amount) * 100);
       const motif = description.trim() || 'Virement';
-      await api.transfer(from.id, iban.trim(), minor, motif, category);
-      if (save && label.trim()) {
+      await api.transfer(from.id, target, minor, motif, category);
+      if (mode === 'new' && save && label.trim()) {
         try {
-          await api.addBeneficiary(label.trim(), iban.trim());
+          await api.addBeneficiary(label.trim(), target);
           onBeneficiariesChanged();
         } catch {
-          // le virement a reussi ; un echec d'enregistrement n'est pas bloquant
+          // le virement a réussi ; un échec d'enregistrement n'est pas bloquant
         }
       }
+      setContactIban('');
       setIban('');
       setAmount('');
       setDescription('');
@@ -62,50 +77,61 @@ export function TransferForm({
     }
   }
 
-  async function removeBeneficiary(id: string) {
-    try {
-      await api.deleteBeneficiary(id);
-      onBeneficiariesChanged();
-    } catch {
-      /* ignore */
-    }
-  }
-
   return (
     <form className="inline-form" onSubmit={handleSubmit}>
       <h3>Virement</h3>
 
-      {beneficiaries.length > 0 && (
-        <div className="beneficiaries-block">
-          <span className="field-label">Mes contacts</span>
-          <div className="beneficiaries">
-            {beneficiaries.map((b) => (
-              <span key={b.id} className="chip">
-                <button type="button" className="chip-fill" onClick={() => setIban(b.accountNumber)}>
-                  {b.label}
-                </button>
-                <button
-                  type="button"
-                  className="chip-remove"
-                  title="Retirer ce contact"
-                  onClick={() => removeBeneficiary(b.id)}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
+      {hasContacts && (
+        <div className="transfer-mode">
+          <button
+            type="button"
+            className={mode === 'contact' ? 'active' : ''}
+            onClick={() => setMode('contact')}
+          >
+            Un contact
+          </button>
+          <button
+            type="button"
+            className={mode === 'new' ? 'active' : ''}
+            onClick={() => setMode('new')}
+          >
+            Nouveau bénéficiaire
+          </button>
         </div>
       )}
 
-      <span className="field-label">Nouveau bénéficiaire</span>
-
-      <input
-        placeholder="IBAN du destinataire (ex. FR76…)"
-        value={iban}
-        onChange={(e) => setIban(e.target.value)}
-        required
-      />
+      {mode === 'contact' ? (
+        <label className="field-label">
+          Contact
+          <select value={contactIban} onChange={(e) => setContactIban(e.target.value)}>
+            <option value="">— Choisir un contact —</option>
+            {beneficiaries.map((b) => (
+              <option key={b.id} value={b.accountNumber}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <>
+          <input
+            placeholder="IBAN du destinataire (ex. FR76…)"
+            value={iban}
+            onChange={(e) => setIban(e.target.value)}
+          />
+          <label className="checkbox">
+            <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
+            Enregistrer ce contact
+          </label>
+          {save && (
+            <input
+              placeholder="Nom du contact (ex. Bob)"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+            />
+          )}
+        </>
+      )}
 
       <input
         placeholder="Communication (optionnel)"
@@ -141,18 +167,6 @@ export function TransferForm({
           Virer
         </button>
       </div>
-
-      <label className="checkbox">
-        <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
-        Enregistrer ce contact
-      </label>
-      {save && (
-        <input
-          placeholder="Nom du contact (ex. Bob)"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-        />
-      )}
 
       {error && <p className="error">{error}</p>}
     </form>
