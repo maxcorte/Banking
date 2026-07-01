@@ -8,6 +8,7 @@ interface Props {
   beneficiaries: Beneficiary[];
   onDone: () => void;
   onBeneficiariesChanged: () => void;
+  twoFactorEnabled?: boolean;
   // Pré-remplissage (ex. depuis un QR code / lien de paiement).
   initialIban?: string;
   initialAmount?: string; // en euros, ex. "12.50"
@@ -19,6 +20,7 @@ export function TransferForm({
   beneficiaries,
   onDone,
   onBeneficiariesChanged,
+  twoFactorEnabled = false,
   initialIban = '',
   initialAmount = '',
   initialDescription = '',
@@ -36,6 +38,7 @@ export function TransferForm({
   const [category, setCategory] = useState('AUTRES');
   const [save, setSave] = useState(false);
   const [label, setLabel] = useState('');
+  const [totpCode, setTotpCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -48,12 +51,23 @@ export function TransferForm({
       setError(mode === 'contact' ? 'Choisis un contact.' : 'Saisis un IBAN.');
       return;
     }
+    if (twoFactorEnabled && !/^\d{6}$/.test(totpCode.trim())) {
+      setError('Saisis le code à 6 chiffres de ton appli d’authentification.');
+      return;
+    }
 
     setBusy(true);
     try {
       const minor = Math.round(parseFloat(amount) * 100);
       const motif = description.trim() || 'Virement';
-      await api.transfer(from.id, target, minor, motif, category);
+      await api.transfer(
+        from.id,
+        target,
+        minor,
+        motif,
+        category,
+        twoFactorEnabled ? totpCode.trim() : undefined,
+      );
       if (mode === 'new' && save && label.trim()) {
         try {
           await api.addBeneficiary(label.trim(), target);
@@ -67,6 +81,7 @@ export function TransferForm({
       setAmount('');
       setDescription('');
       setLabel('');
+      setTotpCode('');
       setCategory('AUTRES');
       setSave(false);
       onDone();
@@ -152,6 +167,19 @@ export function TransferForm({
           </option>
         ))}
       </select>
+
+      {twoFactorEnabled && (
+        <>
+          <span className="field-label">Code d'authentification (2FA)</span>
+          <input
+            inputMode="numeric"
+            maxLength={6}
+            placeholder="6 chiffres"
+            value={totpCode}
+            onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+          />
+        </>
+      )}
 
       <div className="row" style={{ marginTop: '0.6rem' }}>
         <input

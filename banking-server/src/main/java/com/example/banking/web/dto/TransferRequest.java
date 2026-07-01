@@ -11,5 +11,6 @@ public record TransferRequest(
         @NotBlank String toAccountNumber,
         @NotNull @Positive Long amountMinor,
         String description,
-        String category
+        String category,
+        String totpCode
 ) {}

@@ -10,6 +10,7 @@ import com.example.banking.security.CurrentUser;
 import com.example.banking.service.AccountService;
 import com.example.banking.service.AuditService;
 import com.example.banking.service.TransferService;
+import com.example.banking.service.TwoFactorService;
 import com.example.banking.web.dto.TransactionResponse;
 import com.example.banking.web.dto.TransferRequest;
 import jakarta.validation.Valid;
@@ -25,17 +26,20 @@ public class TransferController {
     private final CurrentUser currentUser;
     private final AccessControl accessControl;
     private final AuditService auditService;
+    private final TwoFactorService twoFactorService;
 
     public TransferController(TransferService transferService,
                              AccountService accountService,
                              CurrentUser currentUser,
                              AccessControl accessControl,
-                             AuditService auditService) {
+                             AuditService auditService,
+                             TwoFactorService twoFactorService) {
         this.transferService = transferService;
         this.accountService = accountService;
         this.currentUser = currentUser;
         this.accessControl = accessControl;
         this.auditService = auditService;
+        this.twoFactorService = twoFactorService;
     }
 
     /**
@@ -50,6 +54,10 @@ public class TransferController {
             @Valid @RequestBody TransferRequest request) {
 
         User me = currentUser.require();
+
+        // Operation sensible : si la 2FA est active, un code TOTP valide est requis.
+        twoFactorService.requireCodeIfEnabled(me.getId(), request.totpCode());
+
         Account source = accountService.get(request.fromAccountId());
         accessControl.assertOwnsOrAdmin(source, me);
 

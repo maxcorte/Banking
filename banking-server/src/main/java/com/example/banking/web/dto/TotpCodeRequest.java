@@ -1,0 +1,3 @@
+package com.example.banking.web.dto;
+
+public record TotpCodeRequest(String code) {}

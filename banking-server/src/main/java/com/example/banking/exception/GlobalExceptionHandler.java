@@ -21,6 +21,7 @@ public class GlobalExceptionHandler {
             Map.entry("BENEFICIARY_EXISTS", HttpStatus.CONFLICT),
             Map.entry("BENEFICIARY_NOT_FOUND", HttpStatus.NOT_FOUND),
             Map.entry("TOO_MANY_ATTEMPTS", HttpStatus.TOO_MANY_REQUESTS),
+            Map.entry("TWO_FACTOR_REQUIRED", HttpStatus.FORBIDDEN),
             Map.entry("INVALID_REFRESH", HttpStatus.UNAUTHORIZED)
     );
 

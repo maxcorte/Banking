@@ -1337,3 +1337,35 @@ button.danger:hover:not(:disabled) {
   border-color: var(--accent);
   color: #fff;
 }
+
+/* ===== Sécurité / 2FA ===== */
+.security-card { max-width: 520px; margin: 0 auto; }
+.twofa-setup { display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start; }
+.twofa-steps { margin: 0; padding-left: 1.1rem; color: var(--muted); }
+.twofa-qr {
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+  align-self: center;
+}
+.twofa-secret { font-size: 0.85rem; }
+.twofa-secret code {
+  background: var(--surface-2);
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  word-break: break-all;
+}
+.twofa-code {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  letter-spacing: 0.25em;
+  font-size: 1.1rem;
+  width: 100%;
+  max-width: 220px;
+}
+.twofa-on { color: #16a34a; font-weight: 600; }

@@ -17,6 +17,7 @@ import { QrScanner, type ScannedPay } from './QrScanner';
 import { NotificationsBell } from './NotificationsBell';
 import PaymentRequests from './PaymentRequests';
 import Contacts from './Contacts';
+import Security from './Security';
 
 export function Dashboard() {
   const { logout, isAdmin } = useAuth();
@@ -32,6 +33,8 @@ export function Dashboard() {
   const [showScanner, setShowScanner] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   // Lien de paiement reçu par QR : /?pay=<compte>&amt=<centimes>&desc=<motif>
   const [payRequest, setPayRequest] = useState<{ iban: string; amount: string; desc: string } | null>(
     () => {
@@ -73,6 +76,17 @@ export function Dashboard() {
     refresh();
     loadBeneficiaries();
   }, [refresh, loadBeneficiaries]);
+
+  function loadTwoFactor() {
+    api
+      .twoFactorStatus()
+      .then((s) => setTwoFactorEnabled(s.enabled))
+      .catch(() => setTwoFactorEnabled(false));
+  }
+
+  useEffect(() => {
+    loadTwoFactor();
+  }, []);
 
   function clearPayRequest() {
     setPayRequest(null);
@@ -131,15 +145,17 @@ export function Dashboard() {
     }
   }
 
-  function openSection(which: 'home' | 'receive' | 'requests' | 'contacts' | 'stats' | 'audit') {
+  function openSection(which: 'home' | 'receive' | 'requests' | 'contacts' | 'stats' | 'audit' | 'security') {
     setShowReceive(which === 'receive');
     setShowRequests(which === 'requests');
     setShowContacts(which === 'contacts');
     setShowStats(which === 'stats');
     setShowAudit(which === 'audit');
+    setShowSecurity(which === 'security');
   }
 
-  const anyPanel = showReceive || showRequests || showContacts || showStats || showAudit;
+  const anyPanel =
+    showReceive || showRequests || showContacts || showStats || showAudit || showSecurity;
 
   return (
     <div className="app">
@@ -148,6 +164,13 @@ export function Dashboard() {
         <div className="row">
           <NotificationsBell />
           <ThemeToggle />
+          <button
+            className="link"
+            title="Sécurité"
+            onClick={() => openSection(showSecurity ? 'home' : 'security')}
+          >
+            ⚙️
+          </button>
           <button className="link" onClick={logout}>
             Déconnexion
           </button>
@@ -181,6 +204,10 @@ export function Dashboard() {
             onClose={() => setShowRequests(false)}
             onDone={afterMutation}
           />
+        </main>
+      ) : showSecurity ? (
+        <main className="layout-single">
+          <Security onClose={() => setShowSecurity(false)} onChanged={loadTwoFactor} />
         </main>
       ) : showContacts ? (
         <main className="layout-single">
@@ -252,6 +279,7 @@ export function Dashboard() {
                 key={payRequest ? 'pay' : 'normal'}
                 from={selected}
                 beneficiaries={beneficiaries}
+                twoFactorEnabled={twoFactorEnabled}
                 onDone={() => {
                   void afterMutation();
                   if (payRequest) clearPayRequest();

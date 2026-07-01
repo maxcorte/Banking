@@ -183,11 +183,27 @@ export const api = {
     amountMinor: number,
     description: string,
     category: string,
+    totpCode?: string,
   ) =>
     request<Transaction>('/transfers', {
       method: 'POST',
-      body: JSON.stringify({ fromAccountId, toAccountNumber, amountMinor, description, category }),
+      body: JSON.stringify({
+        fromAccountId,
+        toAccountNumber,
+        amountMinor,
+        description,
+        category,
+        totpCode,
+      }),
     }),
+
+  twoFactorStatus: () => request<{ enabled: boolean }>('/2fa/status'),
+  twoFactorSetup: () =>
+    request<{ secret: string; otpauthUri: string }>('/2fa/setup', { method: 'POST' }),
+  twoFactorEnable: (code: string) =>
+    request<void>('/2fa/enable', { method: 'POST', body: JSON.stringify({ code }) }),
+  twoFactorDisable: (code: string) =>
+    request<void>('/2fa/disable', { method: 'POST', body: JSON.stringify({ code }) }),
 
   listBeneficiaries: () => request<Beneficiary[]>('/beneficiaries'),
 
