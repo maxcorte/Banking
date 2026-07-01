@@ -44,13 +44,15 @@ public class WebAuthnService {
     /** Prepare l'enregistrement d'une passkey pour l'utilisateur connecte. */
     @Transactional(readOnly = true)
     public WebAuthnStartResponse startRegistration(User user) {
-        ByteArray userHandle = creds.findFirstByUserId(user.getId())
-                .map(c -> ByteArray.fromBase64Url(c.getUserHandle()))
-                .orElseGet(() -> {
-                    byte[] h = new byte[32];
-                    random.nextBytes(h);
-                    return new ByteArray(h);
-                });
+        WebAuthnCredential existing = creds.findFirstByUserId(user.getId()).orElse(null);
+        ByteArray userHandle;
+        if (existing != null) {
+            userHandle = decodeHandle(existing.getUserHandle());
+        } else {
+            byte[] h = new byte[32];
+            random.nextBytes(h);
+            userHandle = new ByteArray(h);
+        }
 
         PublicKeyCredentialCreationOptions options = rp.startRegistration(
                 StartRegistrationOptions.builder()
@@ -142,5 +144,14 @@ public class WebAuthnService {
     @Transactional
     public void deleteCredential(UUID id, UUID userId) {
         creds.deleteByIdAndUserId(id, userId);
+    }
+
+    /** Decode base64url en encapsulant l'exception verifiee. */
+    private ByteArray decodeHandle(String value) {
+        try {
+            return ByteArray.fromBase64Url(value);
+        } catch (com.yubico.webauthn.data.exception.Base64UrlException e) {
+            throw new IllegalStateException("User handle invalide", e);
+        }
     }
 }

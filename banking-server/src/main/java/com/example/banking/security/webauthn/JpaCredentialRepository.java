@@ -30,7 +30,7 @@ public class JpaCredentialRepository implements CredentialRepository {
         return users.findByUsername(username)
                 .map(u -> creds.findByUserId(u.getId()).stream()
                         .map(c -> PublicKeyCredentialDescriptor.builder()
-                                .id(ByteArray.fromBase64Url(c.getCredentialId()))
+                                .id(b64(c.getCredentialId()))
                                 .build())
                         .collect(Collectors.toSet()))
                 .orElseGet(Set::of);
@@ -40,7 +40,7 @@ public class JpaCredentialRepository implements CredentialRepository {
     public Optional<ByteArray> getUserHandleForUsername(String username) {
         return users.findByUsername(username)
                 .flatMap(u -> creds.findFirstByUserId(u.getId()))
-                .map(c -> ByteArray.fromBase64Url(c.getUserHandle()));
+                .map(c -> b64(c.getUserHandle()));
     }
 
     @Override
@@ -64,10 +64,19 @@ public class JpaCredentialRepository implements CredentialRepository {
 
     private RegisteredCredential toRegistered(com.example.banking.domain.WebAuthnCredential c) {
         return RegisteredCredential.builder()
-                .credentialId(ByteArray.fromBase64Url(c.getCredentialId()))
-                .userHandle(ByteArray.fromBase64Url(c.getUserHandle()))
-                .publicKeyCose(ByteArray.fromBase64Url(c.getPublicKeyCose()))
+                .credentialId(b64(c.getCredentialId()))
+                .userHandle(b64(c.getUserHandle()))
+                .publicKeyCose(b64(c.getPublicKeyCose()))
                 .signatureCount(c.getSignatureCount())
                 .build();
+    }
+
+    /** Decode base64url en encapsulant l'exception verifiee (valeurs stockees par nos soins). */
+    private static ByteArray b64(String value) {
+        try {
+            return ByteArray.fromBase64Url(value);
+        } catch (com.yubico.webauthn.data.exception.Base64UrlException e) {
+            throw new IllegalStateException("Base64url invalide en base", e);
+        }
     }
 }
