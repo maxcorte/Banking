@@ -80,6 +80,15 @@
             <artifactId>webauthn-server-core</artifactId>
             <version>2.9.0</version>
         </dependency>
+        <!-- La lib Yubico est compilee contre Jackson 2.x (com.fasterxml.jackson),
+             alors que Spring Boot 4 utilise Jackson 3 (tools.jackson) comme mapper
+             principal. On fournit donc Jackson 2.x explicitement pour la compilation
+             et l'execution des methodes JSON de WebAuthn (toCredentialsCreateJson, etc.). -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.21.4</version>
+        </dependency>
         <!-- Migrations de schema versionnees.
              En Spring Boot 4, l'auto-configuration Flyway est dans un module
              dedie : il faut le starter, pas seulement flyway-core. -->
