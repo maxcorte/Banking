@@ -44,9 +44,9 @@ public class PaymentRequestService {
         this.events = events;
     }
 
-    /** L'utilisateur courant demande un remboursement a un autre utilisateur. */
+    /** L'utilisateur courant demande un remboursement au titulaire d'un IBAN. */
     @Transactional
-    public PaymentRequest create(User requester, UUID toAccountId, String payerUsername,
+    public PaymentRequest create(User requester, UUID toAccountId, String payerAccountNumber,
                                  long amountMinor, String description) {
         if (amountMinor <= 0) {
             throw new InvalidTransferException("Le montant doit être strictement positif.");
@@ -56,11 +56,16 @@ public class PaymentRequestService {
         if (to.getOwnerId() == null || !to.getOwnerId().equals(requester.getId())) {
             throw new ForbiddenException("Ce compte ne vous appartient pas.");
         }
-        if (payerUsername == null || payerUsername.isBlank()) {
+        if (payerAccountNumber == null || payerAccountNumber.isBlank()) {
             throw new InvalidTransferException("Destinataire requis.");
         }
-        User payer = users.findByUsername(payerUsername.trim())
-                .orElseThrow(() -> new InvalidTransferException("Utilisateur introuvable."));
+        Account payerAccount = accounts.findByAccountNumber(payerAccountNumber.trim())
+                .orElseThrow(() -> new InvalidTransferException("Ce contact / IBAN est introuvable."));
+        if (payerAccount.getOwnerId() == null) {
+            throw new InvalidTransferException("Ce compte ne peut pas recevoir de demande.");
+        }
+        User payer = users.findById(payerAccount.getOwnerId())
+                .orElseThrow(() -> new InvalidTransferException("Titulaire introuvable."));
         if (payer.getId().equals(requester.getId())) {
             throw new InvalidTransferException("Vous ne pouvez pas vous adresser une demande à vous-même.");
         }

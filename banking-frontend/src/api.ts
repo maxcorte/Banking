@@ -1,4 +1,4 @@
-import type { Account, AuditPage, Beneficiary, Contact, NotificationItem, PaymentRequest, Transaction, TransactionLine, UserInfo } from './types';
+import type { Account, AuditPage, Beneficiary, NotificationItem, PaymentRequest, Transaction, TransactionLine, UserInfo } from './types';
 
 const BASE = '/api';
 
@@ -108,13 +108,13 @@ export const api = {
   listOutgoingRequests: () => request<PaymentRequest[]>('/payment-requests/outgoing'),
   createPaymentRequest: (
     toAccountId: string,
-    payerUsername: string,
+    payerAccountNumber: string,
     amountMinor: number,
     description: string,
   ) =>
     request<void>('/payment-requests', {
       method: 'POST',
-      body: JSON.stringify({ toAccountId, payerUsername, amountMinor, description }),
+      body: JSON.stringify({ toAccountId, payerAccountNumber, amountMinor, description }),
     }),
   acceptPaymentRequest: (id: string, fromAccountId: string) =>
     request<void>(`/payment-requests/${id}/accept`, {
@@ -125,12 +125,6 @@ export const api = {
     request<void>(`/payment-requests/${id}/refuse`, { method: 'POST' }),
   cancelPaymentRequest: (id: string) =>
     request<void>(`/payment-requests/${id}/cancel`, { method: 'POST' }),
-
-  listContacts: () => request<Contact[]>('/contacts'),
-  addContact: (username: string) =>
-    request<Contact>('/contacts', { method: 'POST', body: JSON.stringify({ username }) }),
-  removeContact: (userId: string) =>
-    request<void>(`/contacts/${userId}`, { method: 'DELETE' }),
 
   pushPublicKey: () =>
     request<{ publicKey: string | null; enabled: boolean }>('/push/public-key'),

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, formatEuros } from '../api';
-import type { Account, Contact, PaymentRequest } from '../types';
+import type { Account, Beneficiary, PaymentRequest } from '../types';
 
 const STATUS_LABEL: Record<PaymentRequest['status'], string> = {
   PENDING: 'En attente',
@@ -33,7 +33,7 @@ export default function PaymentRequests({
   const [payer, setPayer] = useState('');
   const [amount, setAmount] = useState('');
   const [desc, setDesc] = useState('');
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<Beneficiary[]>([]);
 
   // Compte choisi pour payer chaque demande reçue (par id de demande)
   const [fromByReq, setFromByReq] = useState<Record<string, string>>({});
@@ -53,14 +53,14 @@ export default function PaymentRequests({
 
   useEffect(() => {
     reload();
-    api.listContacts().then(setContacts).catch(() => setContacts([]));
+    api.listBeneficiaries().then(setContacts).catch(() => setContacts([]));
   }, []);
 
   async function submitNew() {
     setError(null);
     const cents = Math.round(parseFloat(amount.replace(',', '.')) * 100);
     if (!toAccountId) return setError('Choisis le compte à créditer.');
-    if (!payer.trim()) return setError('Indique le nom du destinataire.');
+    if (!payer.trim()) return setError('Choisis un contact ou indique un IBAN.');
     if (!Number.isFinite(cents) || cents <= 0) return setError('Montant invalide.');
     setBusy(true);
     try {
@@ -195,8 +195,8 @@ export default function PaymentRequests({
                 <select value={payer} onChange={(e) => setPayer(e.target.value)}>
                   <option value="">— Choisir un contact —</option>
                   {contacts.map((c) => (
-                    <option key={c.userId} value={c.username}>
-                      {c.username}
+                    <option key={c.id} value={c.accountNumber}>
+                      {c.label}
                     </option>
                   ))}
                 </select>
@@ -204,7 +204,7 @@ export default function PaymentRequests({
             ) : (
               <>
                 <input
-                  placeholder="Destinataire (nom d'utilisateur)"
+                  placeholder="IBAN du destinataire (ex. FR76…)"
                   value={payer}
                   onChange={(e) => setPayer(e.target.value)}
                 />

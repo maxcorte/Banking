@@ -28,7 +28,7 @@ public class PaymentRequestController {
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody CreatePaymentRequestRequest req) {
         User me = currentUser.require();
-        service.create(me, req.toAccountId(), req.payerUsername(), req.amountMinor(), req.description());
+        service.create(me, req.toAccountId(), req.payerAccountNumber(), req.amountMinor(), req.description());
     }
 
     @GetMapping("/incoming")

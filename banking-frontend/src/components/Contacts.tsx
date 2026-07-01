@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import type { Contact } from '../types';
+import type { Beneficiary } from '../types';
 
 export default function Contacts({ onClose }: { onClose: () => void }) {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [username, setUsername] = useState('');
+  const [contacts, setContacts] = useState<Beneficiary[]>([]);
+  const [name, setName] = useState('');
+  const [iban, setIban] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function reload() {
     try {
-      setContacts(await api.listContacts());
+      setContacts(await api.listBeneficiaries());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Chargement impossible.');
     }
@@ -22,11 +23,13 @@ export default function Contacts({ onClose }: { onClose: () => void }) {
 
   async function add() {
     setError(null);
-    if (!username.trim()) return setError("Indique un nom d'utilisateur.");
+    if (!name.trim()) return setError('Donne un nom à ce contact.');
+    if (!iban.trim()) return setError("Indique l'IBAN du contact.");
     setBusy(true);
     try {
-      await api.addContact(username.trim());
-      setUsername('');
+      await api.addBeneficiary(name.trim(), iban.trim());
+      setName('');
+      setIban('');
       await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ajout impossible.');
@@ -35,11 +38,11 @@ export default function Contacts({ onClose }: { onClose: () => void }) {
     }
   }
 
-  async function remove(userId: string) {
+  async function remove(id: string) {
     setError(null);
     setBusy(true);
     try {
-      await api.removeContact(userId);
+      await api.deleteBeneficiary(id);
       await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Suppression impossible.');
@@ -58,15 +61,21 @@ export default function Contacts({ onClose }: { onClose: () => void }) {
       </div>
 
       <p className="muted">
-        Ajoute les personnes à qui tu demandes souvent de l'argent : tu pourras
-        les choisir dans une liste au lieu de taper leur nom.
+        Un contact est un IBAN que tu renommes. Tu le retrouveras lors d'un
+        virement et pour tes demandes de remboursement. Tu peux aussi en
+        enregistrer un directement en faisant un virement.
       </p>
 
       <div className="contacts-add">
         <input
-          placeholder="Nom d'utilisateur"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Nom du contact (ex. Bob)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          placeholder="IBAN (ex. FR76…)"
+          value={iban}
+          onChange={(e) => setIban(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
         />
         <button className="primary" disabled={busy} onClick={add}>
@@ -79,13 +88,16 @@ export default function Contacts({ onClose }: { onClose: () => void }) {
       <div className="contacts-list">
         {contacts.length === 0 && <p className="muted">Aucun contact pour l'instant.</p>}
         {contacts.map((c) => (
-          <div key={c.userId} className="contact-item">
-            <span className="contact-avatar">{c.username.charAt(0).toUpperCase()}</span>
-            <span className="contact-name">{c.username}</span>
+          <div key={c.id} className="contact-item">
+            <span className="contact-avatar">{c.label.charAt(0).toUpperCase()}</span>
+            <span className="contact-info">
+              <span className="contact-name">{c.label}</span>
+              <span className="contact-iban">{c.accountNumber}</span>
+            </span>
             <button
               className="ghost contact-remove"
               disabled={busy}
-              onClick={() => remove(c.userId)}
+              onClick={() => remove(c.id)}
             >
               Retirer
             </button>

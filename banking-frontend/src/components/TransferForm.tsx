@@ -76,24 +76,29 @@ export function TransferForm({
       <h3>Virement</h3>
 
       {beneficiaries.length > 0 && (
-        <div className="beneficiaries">
-          {beneficiaries.map((b) => (
-            <span key={b.id} className="chip">
-              <button type="button" className="chip-fill" onClick={() => setIban(b.accountNumber)}>
-                {b.label}
-              </button>
-              <button
-                type="button"
-                className="chip-remove"
-                title="Supprimer ce bénéficiaire"
-                onClick={() => removeBeneficiary(b.id)}
-              >
-                ×
-              </button>
-            </span>
-          ))}
+        <div className="beneficiaries-block">
+          <span className="field-label">Mes contacts</span>
+          <div className="beneficiaries">
+            {beneficiaries.map((b) => (
+              <span key={b.id} className="chip">
+                <button type="button" className="chip-fill" onClick={() => setIban(b.accountNumber)}>
+                  {b.label}
+                </button>
+                <button
+                  type="button"
+                  className="chip-remove"
+                  title="Retirer ce contact"
+                  onClick={() => removeBeneficiary(b.id)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
       )}
+
+      <span className="field-label">Nouveau bénéficiaire</span>
 
       <input
         placeholder="IBAN du destinataire (ex. FR76…)"
@@ -139,11 +144,11 @@ export function TransferForm({
 
       <label className="checkbox">
         <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
-        Enregistrer ce bénéficiaire
+        Enregistrer ce contact
       </label>
       {save && (
         <input
-          placeholder="Nom du bénéficiaire (ex. Bob)"
+          placeholder="Nom du contact (ex. Bob)"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
         />
