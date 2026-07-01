@@ -93,6 +93,15 @@ public class AuthService {
                         auditService.recordAs(user.getUsername(), "LOGOUT", "Déconnexion."));
     }
 
+    /** Emet une session pour un utilisateur deja authentifie autrement (ex. passkey). */
+    @Transactional
+    public AuthResult issueSessionByUsername(String username) {
+        User user = users.findByUsername(username)
+                .orElseThrow(() -> new BankingException("BAD_CREDENTIALS", "Utilisateur introuvable."));
+        auditService.recordAs(username, "LOGIN_SUCCESS", "Connexion par passkey.");
+        return issueTokens(user);
+    }
+
     private AuthResult issueTokens(User user) {
         String access = jwtService.generateToken(user.getUsername(), user.getRole().name());
         String refresh = refreshTokens.issue(user.getId());

@@ -5,7 +5,9 @@ import { api } from '../api';
 type Mode = 'login' | 'register' | 'forgot';
 
 export function LoginForm() {
-  const { login, register } = useAuth();
+  const { login, loginWithPasskey, register } = useAuth();
+  const passkeySupported =
+    typeof window !== 'undefined' && typeof window.PublicKeyCredential !== 'undefined';
   const [mode, setMode] = useState<Mode>('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -38,6 +40,23 @@ export function LoginForm() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handlePasskey() {
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      await loginWithPasskey();
+    } catch (err) {
+      // L'utilisateur qui annule Face ID / Touch ID ne doit pas voir d'erreur alarmante.
+      const msg = err instanceof Error ? err.message : 'Connexion par passkey impossible.';
+      if (!/abort|notallowed|cancell?ed/i.test(msg)) {
+        setError(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -103,6 +122,20 @@ export function LoginForm() {
         <button type="submit" disabled={busy}>
           {busy ? '…' : submitLabel}
         </button>
+
+        {mode === 'login' && passkeySupported && (
+          <>
+            <div className="auth-sep">ou</div>
+            <button
+              type="button"
+              className="passkey-btn"
+              disabled={busy}
+              onClick={handlePasskey}
+            >
+              🔑 Se connecter avec une passkey
+            </button>
+          </>
+        )}
 
         {mode === 'login' && (
           <p className="switch">

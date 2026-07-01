@@ -84,3 +84,9 @@ export interface AuditPage {
   total: number;
   hasMore: boolean;
 }
+
+export interface Passkey {
+  id: string;
+  label: string;
+  createdAt: string;
+}

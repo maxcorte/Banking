@@ -35,6 +35,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/me").authenticated()
                         // Routes publiques : inscription, connexion, refresh, sante.
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Connexion par passkey : les deux etapes sont publiques.
+                        .requestMatchers("/api/webauthn/login/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         // L'API exige un jeton valide.
                         .requestMatchers("/api/**").authenticated()

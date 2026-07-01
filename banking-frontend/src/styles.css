@@ -1369,3 +1369,24 @@ button.danger:hover:not(:disabled) {
   max-width: 220px;
 }
 .twofa-on { color: #16a34a; font-weight: 600; }
+
+/* Connexion par passkey (écran de login) */
+.auth-sep {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 0.7rem 0 0.2rem;
+}
+.passkey-btn {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+.passkey-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}

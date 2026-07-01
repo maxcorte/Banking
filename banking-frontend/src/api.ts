@@ -1,9 +1,9 @@
-import type { Account, AuditPage, Beneficiary, NotificationItem, PaymentRequest, Transaction, TransactionLine, UserInfo } from './types';
+import type { Account, AuditPage, Beneficiary, NotificationItem, Passkey, PaymentRequest, Transaction, TransactionLine, UserInfo } from './types';
 
 const BASE = '/api';
 
 // Routes d'auth qui ne doivent jamais declencher un refresh automatique.
-const NO_REFRESH = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout', '/auth/forgot-password', '/auth/reset-password'];
+const NO_REFRESH = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout', '/auth/forgot-password', '/auth/reset-password', '/webauthn/login/start', '/webauthn/login/finish'];
 
 // Un seul refresh a la fois, partage entre les requetes concurrentes.
 let refreshing: Promise<boolean> | null = null;
@@ -204,6 +204,24 @@ export const api = {
     request<void>('/2fa/enable', { method: 'POST', body: JSON.stringify({ code }) }),
   twoFactorDisable: (code: string) =>
     request<void>('/2fa/disable', { method: 'POST', body: JSON.stringify({ code }) }),
+
+  webauthnLoginStart: () =>
+    request<{ flowId: string; optionsJson: string }>('/webauthn/login/start', { method: 'POST' }),
+  webauthnLoginFinish: (flowId: string, credential: string) =>
+    request<UserInfo>('/webauthn/login/finish', {
+      method: 'POST',
+      body: JSON.stringify({ flowId, credential }),
+    }),
+  webauthnRegisterStart: () =>
+    request<{ flowId: string; optionsJson: string }>('/webauthn/register/start', { method: 'POST' }),
+  webauthnRegisterFinish: (flowId: string, credential: string, label: string) =>
+    request<void>('/webauthn/register/finish', {
+      method: 'POST',
+      body: JSON.stringify({ flowId, credential, label }),
+    }),
+  webauthnListCredentials: () => request<Passkey[]>('/webauthn/credentials'),
+  webauthnDeleteCredential: (id: string) =>
+    request<void>(`/webauthn/credentials/${id}`, { method: 'DELETE' }),
 
   listBeneficiaries: () => request<Beneficiary[]>('/beneficiaries'),
 

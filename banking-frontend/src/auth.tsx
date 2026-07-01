@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { get as webauthnGet } from '@github/webauthn-json';
 import { api } from './api';
 import type { UserInfo } from './types';
 
@@ -7,6 +8,7 @@ interface AuthContextValue {
   loading: boolean;
   isAdmin: boolean;
   login: (username: string, password: string) => Promise<void>;
+  loginWithPasskey: () => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -53,6 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me);
   }
 
+  async function loginWithPasskey() {
+    const { flowId, optionsJson } = await api.webauthnLoginStart();
+    const options = JSON.parse(optionsJson);
+    const credential = await webauthnGet(options);
+    const me = await api.webauthnLoginFinish(flowId, JSON.stringify(credential));
+    setUser(me);
+  }
+
   async function register(username: string, email: string, password: string) {
     await api.register(username, email, password);
     await login(username, password);
@@ -70,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAdmin: user?.role === 'ADMIN',
         login,
+        loginWithPasskey,
         register,
         logout,
       }}

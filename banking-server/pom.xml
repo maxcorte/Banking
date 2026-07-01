@@ -73,6 +73,13 @@
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>1.84</version>
         </dependency>
+        <!-- WebAuthn / passkeys (Face ID, Touch ID, Windows Hello) cote serveur.
+             BouncyCastle est deja fourni ci-dessus pour les algorithmes de signature. -->
+        <dependency>
+            <groupId>com.yubico</groupId>
+            <artifactId>webauthn-server-core</artifactId>
+            <version>2.9.0</version>
+        </dependency>
         <!-- Migrations de schema versionnees.
              En Spring Boot 4, l'auto-configuration Flyway est dans un module
              dedie : il faut le starter, pas seulement flyway-core. -->
